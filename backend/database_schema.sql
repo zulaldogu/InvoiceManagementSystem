@@ -1,6 +1,6 @@
 -- Kullanıcılar Tablosu
 CREATE TABLE Users (
-    UserId INT PRIMARY KEY,
+    UserId INTEGER PRIMARY KEY AUTOINCREMENT
     UserName VARCHAR(50) NOT NULL,
     Password VARCHAR(255) NOT NULL,
     RecordDate DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -8,7 +8,7 @@ CREATE TABLE Users (
 
 -- Müşteriler Tablosu
 CREATE TABLE Customer (
-    CustomerId INT PRIMARY KEY,
+    CustomerId INTEGER PRIMARY KEY AUTOINCREMENT
     TaxNumber VARCHAR(20),
     Title VARCHAR(100) NOT NULL,
     Address TEXT,
@@ -20,7 +20,7 @@ CREATE TABLE Customer (
 
 -- Fatura Üst Bilgisi Tablosu
 CREATE TABLE Invoice (
-    InvoiceId INT PRIMARY KEY,
+    InvoiceId INTEGER PRIMARY KEY AUTOINCREMENT
     CustomerId INT,
     InvoiceNumber VARCHAR(20) NOT NULL,
     InvoiceDate DATETIME,
@@ -33,8 +33,7 @@ CREATE TABLE Invoice (
 
 -- Fatura Kalemleri (Detay) Tablosu
 CREATE TABLE InvoiceLine (
-    InvoiceLineId INT PRIMARY KEY,
-    InvoiceId INT,
+    InvoiceLineId INTEGER PRIMARY KEY AUTOINCREMENT    InvoiceId INT,
     ItemName VARCHAR(100) NOT NULL,
     Quantity INT NOT NULL,
     Price DECIMAL(18, 2) NOT NULL,
