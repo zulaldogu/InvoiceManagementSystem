@@ -33,12 +33,69 @@ CREATE TABLE Invoice (
 
 -- Fatura Kalemleri (Detay) Tablosu
 CREATE TABLE InvoiceLine (
-    InvoiceLineId INTEGER PRIMARY KEY AUTOINCREMENT    InvoiceId INT,
-    ItemName VARCHAR(100) NOT NULL,
+    InvoiceLineId INTEGER PRIMARY KEY AUTOINCREMENT,
+    InvoiceId INT,
+    ProductId INT,
+    ItemName VARCHAR(100),
     Quantity INT NOT NULL,
     Price DECIMAL(18, 2) NOT NULL,
     UserId INT,
     RecordDate DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (InvoiceId) REFERENCES Invoice(InvoiceId),
+    FOREIGN KEY (ProductId) REFERENCES Product(ProductId),
     FOREIGN KEY (UserId) REFERENCES Users(UserId)
+);
+
+-- Ürünler Tablosu
+CREATE TABLE Product (
+    ProductId INTEGER PRIMARY KEY AUTOINCREMENT,
+    ProductCode VARCHAR(50),
+    ProductName VARCHAR(100) NOT NULL,
+    UnitPrice DECIMAL(18, 2) NOT NULL,
+    VatRate DECIMAL(5, 2),
+    UserId INT,
+    RecordDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (UserId) REFERENCES Users(UserId)
+);
+
+-- Profil Tablosu
+CREATE TABLE Profile (
+    ProfileId INTEGER PRIMARY KEY AUTOINCREMENT,
+    ProfileName VARCHAR(100) NOT NULL,
+    Description VARCHAR(255),
+    UserId INT,
+    RecordDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (UserId) REFERENCES Users(UserId)
+);
+
+-- Rol / Yetki Tablosu
+CREATE TABLE Role (
+    RoleId INTEGER PRIMARY KEY AUTOINCREMENT,
+    RoleName VARCHAR(100) NOT NULL,
+    Description VARCHAR(255),
+    UserId INT,
+    RecordDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (UserId) REFERENCES Users(UserId)
+);
+
+-- Profil - Rol İlişki Tablosu
+CREATE TABLE ProfileRole (
+    ProfileRoleId INTEGER PRIMARY KEY AUTOINCREMENT,
+    ProfileId INT NOT NULL,
+    RoleId INT NOT NULL,
+    UserId INT,
+    RecordDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (ProfileId) REFERENCES Profile(ProfileId),
+    FOREIGN KEY (RoleId) REFERENCES Role(RoleId),
+    FOREIGN KEY (UserId) REFERENCES Users(UserId)
+);
+
+-- Kullanıcı - Profil İlişki Tablosu
+CREATE TABLE UserProfile (
+    UserProfileId INTEGER PRIMARY KEY AUTOINCREMENT,
+    UserId INT NOT NULL,
+    ProfileId INT NOT NULL,
+    RecordDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (UserId) REFERENCES Users(UserId),
+    FOREIGN KEY (ProfileId) REFERENCES Profile(ProfileId)
 );
