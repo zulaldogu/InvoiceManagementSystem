@@ -23,6 +23,17 @@ class Customer(Base):
     UserId = Column(Integer, ForeignKey("Users.UserId"))
     RecordDate = Column(DateTime, server_default=func.now())
 
+class Product(Base):
+    __tablename__ = "Product"
+
+    ProductId = Column(Integer, primary_key=True, index=True)
+    ProductCode = Column(String(50))
+    ProductName = Column(String(100), nullable=False)
+    UnitPrice = Column(Numeric(18, 2), nullable=False)
+    VatRate = Column(Numeric(5, 2))
+    UserId = Column(Integer, ForeignKey("Users.UserId"))
+    RecordDate = Column(DateTime, server_default=func.now())
+
 
 class Invoice(Base):
     __tablename__ = "Invoice"
@@ -41,8 +52,47 @@ class InvoiceLine(Base):
 
     InvoiceLineId = Column(Integer, primary_key=True, index=True)
     InvoiceId = Column(Integer, ForeignKey("Invoice.InvoiceId"))
-    ItemName = Column(String(100), nullable=False)
+    ProductId = Column(Integer, ForeignKey("Product.ProductId"))
+    ItemName = Column(String(100))
     Quantity = Column(Integer, nullable=False)
     Price = Column(Numeric(18, 2), nullable=False)
     UserId = Column(Integer, ForeignKey("Users.UserId"))
+    RecordDate = Column(DateTime, server_default=func.now())
+
+class Profile(Base):
+    __tablename__ = "Profile"
+
+    ProfileId = Column(Integer, primary_key=True, index=True)
+    ProfileName = Column(String(100), nullable=False)
+    Description = Column(String(255))
+    UserId = Column(Integer, ForeignKey("Users.UserId"))
+    RecordDate = Column(DateTime, server_default=func.now())
+
+
+class Role(Base):
+    __tablename__ = "Role"
+
+    RoleId = Column(Integer, primary_key=True, index=True)
+    RoleName = Column(String(100), nullable=False)
+    Description = Column(String(255))
+    UserId = Column(Integer, ForeignKey("Users.UserId"))
+    RecordDate = Column(DateTime, server_default=func.now())
+
+
+class ProfileRole(Base):
+    __tablename__ = "ProfileRole"
+
+    ProfileRoleId = Column(Integer, primary_key=True, index=True)
+    ProfileId = Column(Integer, ForeignKey("Profile.ProfileId"), nullable=False)
+    RoleId = Column(Integer, ForeignKey("Role.RoleId"), nullable=False)
+    UserId = Column(Integer, ForeignKey("Users.UserId"))
+    RecordDate = Column(DateTime, server_default=func.now())
+
+
+class UserProfile(Base):
+    __tablename__ = "UserProfile"
+
+    UserProfileId = Column(Integer, primary_key=True, index=True)
+    UserId = Column(Integer, ForeignKey("Users.UserId"), nullable=False)
+    ProfileId = Column(Integer, ForeignKey("Profile.ProfileId"), nullable=False)
     RecordDate = Column(DateTime, server_default=func.now())
