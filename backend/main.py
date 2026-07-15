@@ -2,7 +2,7 @@ from fastapi import FastAPI
 
 import models
 from database import engine
-from routers import products, roles, profiles, profile_roles, users
+from routers import products, roles, profiles, profile_roles, users, user_profiles
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -13,6 +13,7 @@ app.include_router(roles.router)
 app.include_router(profiles.router)
 app.include_router(profile_roles.router)
 app.include_router(users.router)
+app.include_router(user_profiles.router)
 
 @app.get("/")
 def read_root():
