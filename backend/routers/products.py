@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 import models
 import schemas
 from database import get_db
+from auth import require_role
 
 router = APIRouter(
     prefix="/products",
@@ -12,14 +13,20 @@ router = APIRouter(
 
 
 @router.post("/", response_model=schemas.ProductResponse)
-def create_product(product: schemas.ProductCreate, db: Session = Depends(get_db)):
-    db_product = models.Product(**product.model_dump())
+def create_product(
+    product: schemas.ProductCreate,
+    user_id: int,
+    db: Session = Depends(get_db)
+):
+    require_role(user_id, "MANAGE_PRODUCTS", db)
 
-    db.add(db_product)
+    new_product = models.Product(**product.model_dump())
+
+    db.add(new_product)
     db.commit()
-    db.refresh(db_product)
+    db.refresh(new_product)
 
-    return db_product
+    return new_product
 
 
 @router.get("/", response_model=list[schemas.ProductResponse])
@@ -40,16 +47,18 @@ def get_product(product_id: int, db: Session = Depends(get_db)):
 @router.put("/{product_id}", response_model=schemas.ProductResponse)
 def update_product(
     product_id: int,
-    product_update: schemas.ProductUpdate,
+    updated_product: schemas.ProductUpdate,
+    user_id: int,
     db: Session = Depends(get_db)
 ):
+    require_role(user_id, "MANAGE_PRODUCTS", db)
     product = db.query(models.Product).filter(models.Product.ProductId == product_id).first()
 
     if product is None:
         raise HTTPException(status_code=404, detail="Product not found")
 
-    update_data = product_update.model_dump(exclude_unset=True)
-
+    update_data = updated_product.model_dump(exclude_unset=True)
+    
     for field, value in update_data.items():
         setattr(product, field, value)
 
@@ -60,7 +69,12 @@ def update_product(
 
 
 @router.delete("/{product_id}")
-def delete_product(product_id: int, db: Session = Depends(get_db)):
+def delete_product(
+    product_id: int,
+    user_id: int,
+    db: Session = Depends(get_db)
+):
+    require_role(user_id, "MANAGE_PRODUCTS", db)
     product = db.query(models.Product).filter(models.Product.ProductId == product_id).first()
 
     if product is None:
