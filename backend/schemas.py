@@ -159,7 +159,8 @@ class UserProfileResponse(UserProfileBase):
 
 
 class InvoiceLineBase(BaseModel):
-    ProductId: Optional[int] = None
+    InvoiceId: int
+    ProductId: int
     ItemName: Optional[str] = None
     Quantity: int
     Price: Decimal
