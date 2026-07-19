@@ -106,6 +106,49 @@ def get_lines_by_invoice(
 
     return invoice_lines
 
+@router.put("/{invoice_line_id}", response_model=schemas.InvoiceLineResponse)
+def update_invoice_line(
+    invoice_line_id: int,
+    invoice_line: schemas.InvoiceLineUpdate,
+    user_id: int,
+    db: Session = Depends(get_db)
+):
+    require_role(user_id, "MANAGE_INVOICES", db)
+
+    db_invoice_line = db.query(models.InvoiceLine).filter(
+        models.InvoiceLine.InvoiceLineId == invoice_line_id
+    ).first()
+
+    if db_invoice_line is None:
+        raise HTTPException(status_code=404, detail="Invoice line not found")
+
+    update_data = invoice_line.model_dump(exclude_unset=True)
+
+    if "ProductId" in update_data and update_data["ProductId"] is not None:
+        product = db.query(models.Product).filter(
+            models.Product.ProductId == update_data["ProductId"]
+        ).first()
+
+        if product is None:
+            raise HTTPException(status_code=404, detail="Product not found")
+
+        db_invoice_line.ProductId = product.ProductId
+        db_invoice_line.ItemName = product.ProductName
+        db_invoice_line.Price = product.UnitPrice
+
+    if "Quantity" in update_data and update_data["Quantity"] is not None:
+        db_invoice_line.Quantity = update_data["Quantity"]
+
+    if "UserId" in update_data:
+        db_invoice_line.UserId = update_data["UserId"]
+
+    db.commit()
+    db.refresh(db_invoice_line)
+
+    recalculate_invoice_total(db_invoice_line.InvoiceId, db)
+
+    return db_invoice_line
+
 
 @router.delete("/{invoice_line_id}")
 def delete_invoice_line(
