@@ -223,3 +223,6 @@ class InvoiceResponse(InvoiceBase):
 class InvoiceListRequest(BaseModel):
     StartDate: datetime
     EndDate: datetime
+
+class InvoiceDetailResponse(InvoiceResponse):
+    Lines: List[InvoiceLineResponse] = []

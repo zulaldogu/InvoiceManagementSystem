@@ -48,12 +48,8 @@ def get_invoices(
     return invoices
 
 
-@router.get("/{invoice_id}", response_model=schemas.InvoiceResponse)
-def get_invoice(
-    invoice_id: int,
-    user_id: int,
-    db: Session = Depends(get_db)
-):
+@router.get("/{invoice_id}", response_model=schemas.InvoiceDetailResponse)
+def get_invoice(invoice_id: int, user_id: int, db: Session = Depends(get_db)):
     require_role(user_id, "VIEW_INVOICES", db)
 
     invoice = db.query(models.Invoice).filter(
@@ -63,7 +59,22 @@ def get_invoice(
     if invoice is None:
         raise HTTPException(status_code=404, detail="Invoice not found")
 
-    return invoice
+    lines = db.query(models.InvoiceLine).filter(
+        models.InvoiceLine.InvoiceId == invoice_id
+    ).all()
+
+    invoice_data = {
+        "InvoiceId": invoice.InvoiceId,
+        "CustomerId": invoice.CustomerId,
+        "InvoiceNumber": invoice.InvoiceNumber,
+        "InvoiceDate": invoice.InvoiceDate,
+        "TotalAmount": invoice.TotalAmount,
+        "UserId": invoice.UserId,
+        "RecordDate": invoice.RecordDate,
+        "Lines": lines
+    }
+
+    return invoice_data
 
 
 @router.put("/{invoice_id}", response_model=schemas.InvoiceResponse)
