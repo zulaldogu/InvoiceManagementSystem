@@ -113,11 +113,7 @@ def update_invoice(
 
 
 @router.delete("/{invoice_id}")
-def delete_invoice(
-    invoice_id: int,
-    user_id: int,
-    db: Session = Depends(get_db)
-):
+def delete_invoice(invoice_id: int, user_id: int, db: Session = Depends(get_db)):
     require_role(user_id, "MANAGE_INVOICES", db)
 
     invoice = db.query(models.Invoice).filter(
@@ -127,7 +123,11 @@ def delete_invoice(
     if invoice is None:
         raise HTTPException(status_code=404, detail="Invoice not found")
 
+    db.query(models.InvoiceLine).filter(
+        models.InvoiceLine.InvoiceId == invoice_id
+    ).delete()
+
     db.delete(invoice)
     db.commit()
 
-    return {"message": "Invoice deleted successfully"}
+    return {"message": "Invoice and related invoice lines deleted successfully"}
