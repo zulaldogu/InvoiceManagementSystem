@@ -1,17 +1,142 @@
-# Fatura Yönetim Sistemi (Invoice Management System)
+# Invoice Management System
 
-Bu proje, şirketlerin müşteri ve fatura süreçlerini yönetebilmesi için geliştirilmekte olan tam kapsamlı bir web uygulamasıdır. 
+This project is a full-stack web application developed to manage customer, product, invoice, and authorization processes for companies. The system is being developed as an internship project. The current phase focuses on building a modular backend API before moving to the frontend development phase.
 
-## 🏗️ Sistem Mimarisi
+## System Architecture
 
-Proje, modern web standartlarına uygun olarak iki ana katmandan oluşmaktadır:
-*   **Frontend:** Next.js kullanılarak geliştirilen, kullanıcı dostu arayüz.
-*   **Backend:** REST API standartlarına uygun, Python tabanlı modüler backend mimarisi.
-*   **Veritabanı:** İlişkisel veri modellemesi (RDBMS) ile tasarlanmış SQL veritabanı.
+The project is designed with three main layers:
 
-## 🗄️ Veritabanı Şeması
-Sistem 4 temel tablodan oluşmaktadır:
-1.  `Users`: Sistem kullanıcıları.
-2.  `Customer`: Müşteri cari kartları.
-3.  `Invoice`: Fatura üst bilgileri.
-4.  `InvoiceLine`: Fatura detay/kalem bilgileri.
+- **Frontend:** Planned to be developed with Next.js.
+- **Backend:** Developed with FastAPI as a RESTful API.
+- **Database:** Designed with a relational database structure using SQLite and SQLAlchemy ORM.
+
+## Technologies Used
+
+- Python
+- FastAPI
+- SQLAlchemy
+- SQLite
+- Pydantic
+- Uvicorn
+- Git and GitHub
+- Swagger UI
+
+## Backend Structure
+
+The backend is organized with a modular structure. Database models, schemas, authorization helpers, and routers are separated to keep the project maintainable.
+
+Main backend components:
+
+- `main.py`: Starts the FastAPI application and includes API routers.
+- `database.py`: Contains database connection, session, and base configuration.
+- `models.py`: Contains SQLAlchemy ORM models.
+- `schemas.py`: Contains Pydantic request and response schemas.
+- `auth.py`: Contains role-based authorization helper functions.
+- `routers/`: Contains separate API route files for each module.
+
+## Database Tables
+
+The database currently includes the following tables:
+
+- `Users`: Stores system users.
+- `Customer`: Stores customer account information.
+- `Product`: Stores products or services used in invoice lines.
+- `Invoice`: Stores invoice header information.
+- `InvoiceLine`: Stores invoice line/detail records.
+- `Role`: Stores authorization roles.
+- `Profile`: Stores user profiles.
+- `ProfileRole`: Connects profiles with roles.
+- `UserProfile`: Connects users with profiles.
+
+## Authorization Model
+
+The system uses a role/profile based authorization structure.
+
+Authorization flow:
+
+```text
+User -> UserProfile -> Profile -> ProfileRole -> Role
+```
+
+A user can be assigned to a profile, and a profile can contain multiple roles. API operations are controlled according to the roles assigned to the user's profile.
+
+Example roles:
+
+- `MANAGE_PRODUCTS`
+- `MANAGE_CUSTOMERS`
+- `VIEW_CUSTOMERS`
+- `MANAGE_INVOICES`
+- `VIEW_INVOICES`
+
+Example profiles:
+
+- `ADMIN`
+- `ACCOUNTANT`
+
+The admin profile can manage products, customers, and invoices. The accountant profile can access invoice-related operations depending on the assigned roles.
+
+## API Modules
+
+The backend currently includes the following API modules:
+
+- Users
+- Customers
+- Products
+- Roles
+- Profiles
+- Profile Roles
+- User Profiles
+- Invoices
+- Invoice Lines
+
+## Invoice Workflow
+
+The invoice workflow supports invoice headers and invoice line records.
+
+Implemented invoice features:
+
+- Creating invoice records
+- Listing invoices
+- Viewing invoice details with related line items
+- Updating invoice records
+- Deleting invoice records
+- Creating invoice lines by selecting existing products
+- Automatically retrieving product name and product price for invoice lines
+- Automatically recalculating invoice total amount
+- Deleting related invoice lines when an invoice is deleted
+
+## Validation and Error Handling
+
+The backend API includes validation and controlled error responses for important scenarios:
+
+- Creating an invoice with a non-existing customer returns `404 Customer not found`.
+- Creating an invoice line with a non-existing product returns `404 Product not found`.
+- Performing an authorized operation with a non-existing user returns `404 User not found`.
+- Performing an operation without the required role returns `403 Forbidden`.
+- Requesting non-existing invoice or invoice line records returns `404`.
+
+## Running the Backend
+
+Go to the backend folder:
+
+```powershell
+cd backend
+```
+
+Run the FastAPI server:
+
+```powershell
+.\venv\Scripts\python.exe -m uvicorn main:app --reload
+```
+
+After the server starts, open Swagger UI:
+
+```text
+http://127.0.0.1:8000/docs
+```
+
+## Current Development Status
+
+The backend API structure is mostly completed for the first development phase. Customer, product, authorization, invoice, and invoice line modules have been implemented and tested through Swagger UI.
+
+The next development phase will focus on building the frontend with Next.js and connecting frontend screens to the backend API.
