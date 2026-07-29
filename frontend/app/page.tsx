@@ -1,3 +1,4 @@
+import Link from "next/link";
 const modules = [
   {
     title: "Customers",
@@ -53,6 +54,15 @@ export default function Home() {
               <p className="text-sm leading-6 text-slate-300">
                 {module.description}
               </p>
+
+              {module.title === "Products" && (
+                  <Link
+                    href="/products"
+                    className="mt-5 inline-flex rounded-md bg-cyan-400 px-4 py-2 text-sm font-medium text-slate-950 transition hover:bg-cyan-300"
+                  >
+                    View products
+                  </Link>
+                )}
             </article>
           ))}
         </div>
