@@ -4,21 +4,25 @@ const modules = [
     title: "Customers",
     description: "Manage customer account records and customer details.",
     status: "Backend ready",
+    href: "/customers",
   },
   {
     title: "Products",
     description: "Manage products and services used in invoice lines.",
     status: "Backend ready",
+    href: "/products",
   },
   {
     title: "Invoices",
     description: "Create invoice headers, add line items, and calculate totals.",
     status: "Backend ready",
+    href: null,
   },
   {
     title: "Roles & Profiles",
     description: "Control user permissions with role and profile assignments.",
     status: "Backend ready",
+    href: null,
   },
 ];
 
@@ -54,15 +58,14 @@ export default function Home() {
               <p className="text-sm leading-6 text-slate-300">
                 {module.description}
               </p>
-
-              {module.title === "Products" && (
-                  <Link
-                    href="/products"
-                    className="mt-5 inline-flex rounded-md bg-cyan-400 px-4 py-2 text-sm font-medium text-slate-950 transition hover:bg-cyan-300"
-                  >
-                    View products
-                  </Link>
-                )}
+              {module.href && (
+                <Link
+                  href={module.href}
+                  className="mt-5 inline-flex rounded-md bg-cyan-400 px-4 py-2 text-sm font-medium text-slate-950 transition hover:bg-cyan-300"
+                >
+                  View {module.title.toLowerCase()}
+                </Link>
+              )}
             </article>
           ))}
         </div>
