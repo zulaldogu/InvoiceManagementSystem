@@ -16,7 +16,7 @@ const modules = [
     title: "Invoices",
     description: "Create invoice headers, add line items, and calculate totals.",
     status: "Backend ready",
-    href: null,
+    href: "/invoices",
   },
   {
     title: "Roles & Profiles",
