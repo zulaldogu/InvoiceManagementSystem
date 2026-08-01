@@ -26,7 +26,7 @@ export default function InvoiceDetailPage() {
         setError(
           error instanceof Error
             ? error.message
-            : "An unexpected error occurred.",
+            : "Beklenmeyen bir hata oluştu.",
         );
       } finally {
         setIsLoading(false);
@@ -43,11 +43,11 @@ export default function InvoiceDetailPage() {
           href="/invoices"
           className="mb-8 inline-flex text-sm font-medium text-cyan-300 transition hover:text-cyan-200"
         >
-          ← Back to invoices
+          ← Faturalara dön
         </Link>
 
         {isLoading && (
-          <p className="text-slate-300">Loading invoice details...</p>
+          <p className="text-slate-300">Fatura detayları yükleniyor...</p>
         )}
 
         {error && (
@@ -60,7 +60,7 @@ export default function InvoiceDetailPage() {
           <>
             <div className="mb-8">
               <p className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-cyan-300">
-                Invoice Management System
+                Fatura Yönetim Sistemi
               </p>
 
               <h1 className="text-4xl font-semibold tracking-tight">
@@ -68,63 +68,63 @@ export default function InvoiceDetailPage() {
               </h1>
 
               <p className="mt-4 text-slate-300">
-                Invoice header and related line items.
+                Fatura üst bilgileri ve ilgili fatura kalemleri.
               </p>
             </div>
 
             <div className="mb-10 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
               <article className="rounded-lg border border-slate-800 bg-slate-900 p-5">
-                <p className="text-sm text-slate-400">Customer ID</p>
+                <p className="text-sm text-slate-400">Müşteri ID</p>
                 <p className="mt-2 text-lg font-medium">
-                  {invoice.CustomerId ?? "Not specified"}
+                  {invoice.CustomerId ?? "Belirtilmemiş"}
                 </p>
               </article>
 
               <article className="rounded-lg border border-slate-800 bg-slate-900 p-5">
-                <p className="text-sm text-slate-400">Invoice date</p>
+                <p className="text-sm text-slate-400">Fatura tarihi</p>
                 <p className="mt-2 text-lg font-medium">
                   {invoice.InvoiceDate
                     ? new Date(
                         invoice.InvoiceDate,
-                      ).toLocaleDateString("en-GB")
-                    : "Not specified"}
+                      ).toLocaleDateString("tr-TR")
+                    : "Belirtilmemiş"}
                 </p>
               </article>
 
               <article className="rounded-lg border border-slate-800 bg-slate-900 p-5">
-                <p className="text-sm text-slate-400">Total amount</p>
+                <p className="text-sm text-slate-400">Toplam tutar</p>
                 <p className="mt-2 text-lg font-medium">
                   {invoice.TotalAmount ?? "0.00"}
                 </p>
               </article>
 
               <article className="rounded-lg border border-slate-800 bg-slate-900 p-5">
-                <p className="text-sm text-slate-400">Created by user</p>
+                <p className="text-sm text-slate-400">Kaydı oluşturan kullanıcı</p>
                 <p className="mt-2 text-lg font-medium">
-                  {invoice.UserId ?? "Not specified"}
+                  {invoice.UserId ?? "Belirtilmemiş"}
                 </p>
               </article>
             </div>
 
             <div>
               <h2 className="mb-5 text-2xl font-semibold">
-                Invoice lines
+                Fatura kalemleri
               </h2>
 
               {invoice.Lines.length === 0 ? (
                 <div className="rounded-lg border border-slate-800 bg-slate-900 p-5 text-slate-300">
-                  No invoice lines were found.
+                Fatura kalemi bulunamadı.
                 </div>
               ) : (
                 <div className="overflow-x-auto rounded-lg border border-slate-800">
                   <table className="w-full text-left">
                     <thead className="bg-slate-900 text-sm text-slate-300">
                       <tr>
-                        <th className="px-5 py-4">Item</th>
-                        <th className="px-5 py-4">Product ID</th>
-                        <th className="px-5 py-4">Quantity</th>
-                        <th className="px-5 py-4">Unit price</th>
-                        <th className="px-5 py-4">Line total</th>
+                        <th className="px-5 py-4">Kalem</th>
+                        <th className="px-5 py-4">Ürün ID</th>
+                        <th className="px-5 py-4">Miktar</th>
+                        <th className="px-5 py-4">Birim fiyat</th>
+                        <th className="px-5 py-4">Kalem toplamı</th>
                       </tr>
                     </thead>
 

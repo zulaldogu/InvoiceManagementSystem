@@ -20,7 +20,7 @@ export default function ProductsPage() {
         setError(
           error instanceof Error
             ? error.message
-            : "An unexpected error occurred.",
+            : "Beklenmeyen bir hata oluştu.",
         );
       } finally {
         setIsLoading(false);
@@ -37,22 +37,22 @@ export default function ProductsPage() {
   href="/"
   className="mb-8 inline-flex text-sm font-medium text-cyan-300 transition hover:text-cyan-200"
 >
-  ← Back to dashboard
+  ← Ana panele dön
 </Link>
         <div className="mb-8">
           <p className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-cyan-300">
-            Invoice Management System
+            Fatura Yönetim Sistemi
           </p>
 
-          <h1 className="text-4xl font-semibold tracking-tight">Products</h1>
+          <h1 className="text-4xl font-semibold tracking-tight">Ürünler</h1>
 
           <p className="mt-4 text-slate-300">
-            Products and services retrieved from the FastAPI backend.
+            FastAPI backend üzerinden alınan ürün ve hizmet kayıtları.
           </p>
         </div>
 
         {isLoading && (
-          <p className="text-slate-300">Loading products...</p>
+          <p className="text-slate-300">Ürünler yükleniyor...</p>
         )}
 
         {error && (
@@ -62,7 +62,7 @@ export default function ProductsPage() {
         )}
 
         {!isLoading && !error && products.length === 0 && (
-          <p className="text-slate-300">No products were found.</p>
+          <p className="text-slate-300">Ürün bulunamadı.</p>
         )}
 
         {!isLoading && !error && products.length > 0 && (
@@ -70,10 +70,10 @@ export default function ProductsPage() {
             <table className="w-full text-left">
               <thead className="bg-slate-900 text-sm text-slate-300">
                 <tr>
-                  <th className="px-5 py-4">Code</th>
-                  <th className="px-5 py-4">Product name</th>
-                  <th className="px-5 py-4">Unit price</th>
-                  <th className="px-5 py-4">VAT rate</th>
+                  <th className="px-5 py-4">Ürün kodu</th>
+                  <th className="px-5 py-4">Ürün adı</th>
+                  <th className="px-5 py-4">Birim fiyat</th>
+                  <th className="px-5 py-4">KDV oranı</th>
                 </tr>
               </thead>
 

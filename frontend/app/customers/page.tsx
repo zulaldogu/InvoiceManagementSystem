@@ -22,7 +22,7 @@ export default function CustomersPage() {
         setError(
           error instanceof Error
             ? error.message
-            : "An unexpected error occurred.",
+            : "Beklenmeyen bir hata oluştu.",
         );
       } finally {
         setIsLoading(false);
@@ -39,25 +39,25 @@ export default function CustomersPage() {
           href="/"
           className="mb-8 inline-flex text-sm font-medium text-cyan-300 transition hover:text-cyan-200"
         >
-          ← Back to dashboard
+          ← Ana panele dön
         </Link>
 
         <div className="mb-8">
           <p className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-cyan-300">
-            Invoice Management System
+            Fatura Yönetim Sistemi
           </p>
 
           <h1 className="text-4xl font-semibold tracking-tight">
-            Customers
+            Müşteriler
           </h1>
 
           <p className="mt-4 text-slate-300">
-            Customer records retrieved from the FastAPI backend.
+            FastAPI backend üzerinden alınan müşteri kayıtları.
           </p>
         </div>
 
         {isLoading && (
-          <p className="text-slate-300">Loading customers...</p>
+          <p className="text-slate-300">Müşteriler yükleniyor...</p>
         )}
 
         {error && (
@@ -67,7 +67,7 @@ export default function CustomersPage() {
         )}
 
         {!isLoading && !error && customers.length === 0 && (
-          <p className="text-slate-300">No customers were found.</p>
+          <p className="text-slate-300">Müşteri bulunamadı.</p>
         )}
 
         {!isLoading && !error && customers.length > 0 && (
@@ -75,10 +75,10 @@ export default function CustomersPage() {
             <table className="w-full text-left">
               <thead className="bg-slate-900 text-sm text-slate-300">
                 <tr>
-                  <th className="px-5 py-4">Title</th>
-                  <th className="px-5 py-4">Tax number</th>
-                  <th className="px-5 py-4">Email</th>
-                  <th className="px-5 py-4">Address</th>
+                  <th className="px-5 py-4">Unvan</th>
+                  <th className="px-5 py-4">Vergi numarası</th>
+                  <th className="px-5 py-4">E-posta</th>
+                  <th className="px-5 py-4">Adres</th>
                 </tr>
               </thead>
 
@@ -93,15 +93,15 @@ export default function CustomersPage() {
                     </td>
 
                     <td className="px-5 py-4">
-                      {customer.TaxNumber ?? "Not specified"}
+                      {customer.TaxNumber ?? "Belirtilmemiş"}
                     </td>
 
                     <td className="px-5 py-4">
-                      {customer.EMail ?? "Not specified"}
+                      {customer.EMail ?? "Belirtilmemiş"}
                     </td>
 
                     <td className="px-5 py-4">
-                      {customer.Address ?? "Not specified"}
+                      {customer.Address ?? "Belirtilmemiş"}
                     </td>
                   </tr>
                 ))}

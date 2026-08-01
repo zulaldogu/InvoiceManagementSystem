@@ -1,28 +1,32 @@
 import Link from "next/link";
 const modules = [
   {
-    title: "Customers",
-    description: "Manage customer account records and customer details.",
-    status: "Backend ready",
+    title: "Müşteriler",
+    description: "Müşteri hesap kayıtlarını ve iletişim bilgilerini yönetin.",
+    status: "Backend hazır",
     href: "/customers",
+    buttonLabel: "Müşterileri görüntüle",
   },
   {
-    title: "Products",
-    description: "Manage products and services used in invoice lines.",
-    status: "Backend ready",
+    title: "Ürünler",
+    description: "Fatura kalemlerinde kullanılan ürün ve hizmetleri yönetin.",
+    status: "Backend hazır",
     href: "/products",
+    buttonLabel: "Ürünleri görüntüle",
   },
   {
-    title: "Invoices",
-    description: "Create invoice headers, add line items, and calculate totals.",
-    status: "Backend ready",
+    title: "Faturalar",
+    description: "Fatura üst bilgilerini, kalemlerini ve toplamlarını yönetin.",
+    status: "Backend hazır",
     href: "/invoices",
+    buttonLabel: "Faturaları görüntüle",
   },
   {
-    title: "Roles & Profiles",
-    description: "Control user permissions with role and profile assignments.",
-    status: "Backend ready",
+    title: "Roller ve Profiller",
+    description: "Kullanıcı yetkilerini rol ve profil atamalarıyla yönetin.",
+    status: "Backend hazır",
     href: null,
+    buttonLabel: null,
   },
 ];
 
@@ -32,14 +36,14 @@ export default function Home() {
       <section className="mx-auto max-w-6xl">
         <div className="mb-10">
           <p className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-cyan-300">
-            Invoice Management System
+          Fatura Yönetim Sistemi
           </p>
           <h1 className="text-4xl font-semibold tracking-tight">
-            Frontend development workspace
+          Yönetim Paneli
           </h1>
           <p className="mt-4 max-w-3xl text-base leading-7 text-slate-300">
-            This interface will be connected to the FastAPI backend modules for
-            customer, product, invoice, and authorization management.
+          Müşteri, ürün, fatura ve yetkilendirme işlemlerini FastAPI backend
+          üzerinden yönetin.
           </p>
         </div>
 
@@ -58,12 +62,12 @@ export default function Home() {
               <p className="text-sm leading-6 text-slate-300">
                 {module.description}
               </p>
-              {module.href && (
+              {module.href && module.buttonLabel && (
                 <Link
                   href={module.href}
                   className="mt-5 inline-flex rounded-md bg-cyan-400 px-4 py-2 text-sm font-medium text-slate-950 transition hover:bg-cyan-300"
                 >
-                  View {module.title.toLowerCase()}
+                  {module.buttonLabel}
                 </Link>
               )}
             </article>
