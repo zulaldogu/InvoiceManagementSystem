@@ -6,6 +6,7 @@ services:
       - "8000:8000"
     environment:
       DATABASE_URL: sqlite:////data/invoice_management.db
+      SEED_DEMO_DATA: "true"
     volumes:
       - invoice-data:/data
     healthcheck:

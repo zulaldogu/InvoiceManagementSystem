@@ -1,11 +1,14 @@
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
+from seed import seed_demo_data
 import models
 from database import engine
 from routers import products, roles, profiles, profile_roles, users, user_profiles, customers, invoices, invoice_lines
 
 models.Base.metadata.create_all(bind=engine)
+if os.getenv("SEED_DEMO_DATA", "false").lower() == "true":
+    seed_demo_data()
 
 app = FastAPI(title="Fatura Yönetim Sistemi API")
 

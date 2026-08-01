@@ -6,7 +6,7 @@ This project is a full-stack web application developed to manage customer, produ
 
 The project is designed with three main layers:
 
-- **Frontend:** Planned to be developed with Next.js.
+- **Frontend:** Developed with Next.js, React, TypeScript, and Tailwind CSS.
 - **Backend:** Developed with FastAPI as a RESTful API.
 - **Database:** Designed with a relational database structure using SQLite and SQLAlchemy ORM.
 
@@ -20,6 +20,11 @@ The project is designed with three main layers:
 - Uvicorn
 - Git and GitHub
 - Swagger UI
+- Next.js
+- React
+- TypeScript
+- Tailwind CSS
+- Docker and Docker Compose
 
 ## Backend Structure
 
@@ -115,6 +120,58 @@ The backend API includes validation and controlled error responses for important
 - Performing an operation without the required role returns `403 Forbidden`.
 - Requesting non-existing invoice or invoice line records returns `404`.
 
+## Running with Docker
+
+Docker Desktop must be installed and running before starting the application.
+
+Clone the repository and go to the project directory:
+
+```powershell
+git clone https://github.com/zulaldogu/InvoiceManagementSystem.git
+cd InvoiceManagementSystem
+```
+
+Build and start the backend and frontend services:
+
+```powershell
+docker compose up --build -d
+```
+
+After both containers start, open the following addresses:
+
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8000
+- Swagger UI: http://localhost:8000/docs
+
+The Docker environment automatically creates repeatable demo data:
+
+- Demo user ID: `1`
+- Username: `demo`
+- Password: `demo123`
+- One sample customer
+- One sample product
+- One sample invoice with an invoice line
+
+The SQLite database is stored in the named Docker volume `invoice-data`. Demo records are created only when missing, so restarting the containers does not duplicate them.
+
+Check the running services:
+
+```powershell
+docker compose ps
+```
+
+View container logs:
+
+```powershell
+docker compose logs
+```
+
+Stop the application:
+
+```powershell
+docker compose down
+```
+
 ## Running the Backend
 
 Go to the backend folder:
@@ -137,6 +194,4 @@ http://127.0.0.1:8000/docs
 
 ## Current Development Status
 
-The backend API structure is mostly completed for the first development phase. Customer, product, authorization, invoice, and invoice line modules have been implemented and tested through Swagger UI.
-
-The next development phase will focus on building the frontend with Next.js and connecting frontend screens to the backend API.
+The backend API and the first frontend development phase have been completed. The application currently provides Turkish dashboard, product, customer, invoice list, and invoice detail pages connected to the FastAPI backend. Backend and frontend services can be built and started together with Docker Compose. A persistent SQLite volume and repeatable demo data are included for testing.
