@@ -82,7 +82,6 @@ class CustomerBase(BaseModel):
     Title: str
     Address: Optional[str] = None
     EMail: Optional[str] = None
-    UserId: Optional[int] = None
 
 
 class CustomerCreate(CustomerBase):
@@ -94,11 +93,12 @@ class CustomerUpdate(BaseModel):
     Title: Optional[str] = None
     Address: Optional[str] = None
     EMail: Optional[str] = None
-    UserId: Optional[int] = None
 
 
 class CustomerResponse(CustomerBase):
     CustomerId: int
+    CompanyId: Optional[int] = None
+    UserId: Optional[int] = None
     RecordDate: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
