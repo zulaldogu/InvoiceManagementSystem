@@ -109,7 +109,6 @@ class ProductBase(BaseModel):
     ProductName: str
     UnitPrice: Decimal
     VatRate: Optional[Decimal] = None
-    UserId: Optional[int] = None
 
 
 class ProductCreate(ProductBase):
@@ -121,11 +120,12 @@ class ProductUpdate(BaseModel):
     ProductName: Optional[str] = None
     UnitPrice: Optional[Decimal] = None
     VatRate: Optional[Decimal] = None
-    UserId: Optional[int] = None
 
 
 class ProductResponse(ProductBase):
     ProductId: int
+    CompanyId: Optional[int] = None
+    UserId: Optional[int] = None
     RecordDate: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
