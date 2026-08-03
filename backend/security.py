@@ -68,6 +68,17 @@ def authenticate_user(
 
     if user is None or not user.IsActive:
         return None
+    if not user.IsSuperAdmin:
+        if user.CompanyId is None:
+            return None
+
+        company = db.query(models.Company).filter(
+            models.Company.CompanyId == user.CompanyId,
+            models.Company.IsActive.is_(True),
+        ).first()
+
+        if company is None:
+            return None
 
     if not verify_password(password, user.Password):
         return None
@@ -132,6 +143,17 @@ def get_current_user(
 
     if user is None or not user.IsActive:
         raise credentials_exception
+    if not user.IsSuperAdmin:
+        if user.CompanyId is None:
+            raise credentials_exception
+
+        company = db.query(models.Company).filter(
+            models.Company.CompanyId == user.CompanyId,
+            models.Company.IsActive.is_(True),
+        ).first()
+
+        if company is None:
+            raise credentials_exception
 
     return user
 
