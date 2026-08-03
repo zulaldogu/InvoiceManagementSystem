@@ -10,7 +10,16 @@ class UserBase(BaseModel):
 
 
 class UserCreate(UserBase):
-    Password: str
+    Password: str = Field(min_length=8)
+    CompanyId: Optional[int] = None
+    IsSuperAdmin: bool = False
+    IsActive: bool = True
+
+
+class UserUpdate(BaseModel):
+    UserName: Optional[str] = None
+    Password: Optional[str] = Field(default=None, min_length=8)
+    IsActive: Optional[bool] = None
 
 
 class UserResponse(UserBase):
@@ -26,6 +35,18 @@ class UserResponse(UserBase):
 class LoginRequest(BaseModel):
     UserName: str
     Password: str
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class TokenPayload(BaseModel):
+    user_id: int
+    company_id: Optional[int] = None
+    is_super_admin: bool = False
+
 
 class CompanyBase(BaseModel):
     CompanyCode: str
