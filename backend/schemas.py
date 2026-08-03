@@ -15,6 +15,9 @@ class UserCreate(UserBase):
 
 class UserResponse(UserBase):
     UserId: int
+    CompanyId: Optional[int] = None
+    IsSuperAdmin: bool = False
+    IsActive: bool = True
     RecordDate: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
@@ -23,6 +26,34 @@ class UserResponse(UserBase):
 class LoginRequest(BaseModel):
     UserName: str
     Password: str
+
+class CompanyBase(BaseModel):
+    CompanyCode: str
+    CompanyName: str
+    TaxNumber: Optional[str] = None
+    Address: Optional[str] = None
+    EMail: Optional[str] = None
+    IsActive: bool = True
+
+
+class CompanyCreate(CompanyBase):
+    pass
+
+
+class CompanyUpdate(BaseModel):
+    CompanyCode: Optional[str] = None
+    CompanyName: Optional[str] = None
+    TaxNumber: Optional[str] = None
+    Address: Optional[str] = None
+    EMail: Optional[str] = None
+    IsActive: Optional[bool] = None
+
+
+class CompanyResponse(CompanyBase):
+    CompanyId: int
+    RecordDate: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CustomerBase(BaseModel):
