@@ -10,11 +10,23 @@ class UserBase(BaseModel):
 
 
 class UserCreate(UserBase):
-    Password: str
+    Password: str = Field(min_length=8)
+    CompanyId: Optional[int] = None
+    IsSuperAdmin: bool = False
+    IsActive: bool = True
+
+
+class UserUpdate(BaseModel):
+    UserName: Optional[str] = None
+    Password: Optional[str] = Field(default=None, min_length=8)
+    IsActive: Optional[bool] = None
 
 
 class UserResponse(UserBase):
     UserId: int
+    CompanyId: Optional[int] = None
+    IsSuperAdmin: bool = False
+    IsActive: bool = True
     RecordDate: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
@@ -25,12 +37,51 @@ class LoginRequest(BaseModel):
     Password: str
 
 
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class TokenPayload(BaseModel):
+    user_id: int
+    company_id: Optional[int] = None
+    is_super_admin: bool = False
+
+
+class CompanyBase(BaseModel):
+    CompanyCode: str
+    CompanyName: str
+    TaxNumber: Optional[str] = None
+    Address: Optional[str] = None
+    EMail: Optional[str] = None
+    IsActive: bool = True
+
+
+class CompanyCreate(CompanyBase):
+    pass
+
+
+class CompanyUpdate(BaseModel):
+    CompanyCode: Optional[str] = None
+    CompanyName: Optional[str] = None
+    TaxNumber: Optional[str] = None
+    Address: Optional[str] = None
+    EMail: Optional[str] = None
+    IsActive: Optional[bool] = None
+
+
+class CompanyResponse(CompanyBase):
+    CompanyId: int
+    RecordDate: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class CustomerBase(BaseModel):
     TaxNumber: Optional[str] = None
     Title: str
     Address: Optional[str] = None
     EMail: Optional[str] = None
-    UserId: Optional[int] = None
 
 
 class CustomerCreate(CustomerBase):
@@ -42,11 +93,12 @@ class CustomerUpdate(BaseModel):
     Title: Optional[str] = None
     Address: Optional[str] = None
     EMail: Optional[str] = None
-    UserId: Optional[int] = None
 
 
 class CustomerResponse(CustomerBase):
     CustomerId: int
+    CompanyId: Optional[int] = None
+    UserId: Optional[int] = None
     RecordDate: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
@@ -57,7 +109,6 @@ class ProductBase(BaseModel):
     ProductName: str
     UnitPrice: Decimal
     VatRate: Optional[Decimal] = None
-    UserId: Optional[int] = None
 
 
 class ProductCreate(ProductBase):
@@ -69,11 +120,12 @@ class ProductUpdate(BaseModel):
     ProductName: Optional[str] = None
     UnitPrice: Optional[Decimal] = None
     VatRate: Optional[Decimal] = None
-    UserId: Optional[int] = None
 
 
 class ProductResponse(ProductBase):
     ProductId: int
+    CompanyId: Optional[int] = None
+    UserId: Optional[int] = None
     RecordDate: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
@@ -158,41 +210,40 @@ class UserProfileResponse(UserProfileBase):
     model_config = ConfigDict(from_attributes=True)
 
 
-class InvoiceLineBase(BaseModel):
+class InvoiceLineCreate(BaseModel):
+    ProductId: int
+    Quantity: int = Field(gt=0)
+    Price: Optional[Decimal] = Field(default=None, ge=0)
+
+
+class InvoiceLineCreateRequest(InvoiceLineCreate):
+    InvoiceId: int
+
+
+class InvoiceLineUpdate(BaseModel):
+    ProductId: Optional[int] = None
+    Quantity: Optional[int] = Field(default=None, gt=0)
+    Price: Optional[Decimal] = Field(default=None, ge=0)
+
+
+class InvoiceLineResponse(BaseModel):
+    InvoiceLineId: int
     InvoiceId: int
     ProductId: int
     ItemName: Optional[str] = None
     Quantity: int
     Price: Decimal
+    CompanyId: Optional[int] = None
     UserId: Optional[int] = None
-
-
-class InvoiceLineCreate(InvoiceLineBase):
-    pass
-
-
-class InvoiceLineUpdate(BaseModel):
-    ProductId: Optional[int] = None
-    ItemName: Optional[str] = None
-    Quantity: Optional[int] = None
-    Price: Optional[Decimal] = None
-    UserId: Optional[int] = None
-
-
-class InvoiceLineResponse(InvoiceLineBase):
-    InvoiceLineId: int
-    InvoiceId: Optional[int] = None
     RecordDate: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class InvoiceBase(BaseModel):
-    CustomerId: Optional[int] = None
-    InvoiceNumber: str
+    CustomerId: int
+    InvoiceNumber: str = Field(min_length=1, max_length=20)
     InvoiceDate: Optional[datetime] = None
-    TotalAmount: Optional[Decimal] = None
-    UserId: Optional[int] = None
 
 
 class InvoiceCreate(InvoiceBase):
@@ -201,19 +252,19 @@ class InvoiceCreate(InvoiceBase):
 
 class InvoiceUpdate(BaseModel):
     CustomerId: Optional[int] = None
-    InvoiceNumber: Optional[str] = None
+    InvoiceNumber: Optional[str] = Field(
+        default=None,
+        min_length=1,
+        max_length=20,
+    )
     InvoiceDate: Optional[datetime] = None
-    TotalAmount: Optional[Decimal] = None
-    UserId: Optional[int] = None
-    Lines: Optional[List[InvoiceLineCreate]] = None
-
-
-class InvoiceDelete(BaseModel):
-    InvoiceId: int
 
 
 class InvoiceResponse(InvoiceBase):
     InvoiceId: int
+    TotalAmount: Optional[Decimal] = None
+    CompanyId: Optional[int] = None
+    UserId: Optional[int] = None
     RecordDate: Optional[datetime] = None
     Lines: List[InvoiceLineResponse] = Field(default_factory=list)
 
@@ -224,5 +275,6 @@ class InvoiceListRequest(BaseModel):
     StartDate: datetime
     EndDate: datetime
 
+
 class InvoiceDetailResponse(InvoiceResponse):
-    Lines: List[InvoiceLineResponse] = []
+    pass

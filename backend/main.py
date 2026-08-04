@@ -2,11 +2,21 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from seed import seed_demo_data
-import models
-from database import engine
-from routers import products, roles, profiles, profile_roles, users, user_profiles, customers, invoices, invoice_lines
 
-models.Base.metadata.create_all(bind=engine)
+from routers import (
+    authentication,
+    companies,
+    customers,
+    invoice_lines,
+    invoices,
+    products,
+    profile_roles,
+    profiles,
+    roles,
+    user_profiles,
+    users,
+)
+
 if os.getenv("SEED_DEMO_DATA", "false").lower() == "true":
     seed_demo_data()
 
@@ -25,6 +35,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(authentication.router)
+app.include_router(companies.router)
 app.include_router(products.router)
 app.include_router(roles.router)
 app.include_router(profiles.router)

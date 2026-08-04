@@ -124,12 +124,20 @@ The backend API includes validation and controlled error responses for important
 
 Docker Desktop must be installed and running before starting the application.
 
-Clone the repository and go to the project directory:
+Clone the repository and enter the project directory:
 
 ```powershell
 git clone https://github.com/zulaldogu/InvoiceManagementSystem.git
 cd InvoiceManagementSystem
 ```
+
+Create the local environment file from the provided example:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+The `.env` file contains local JWT and demo login settings and is ignored by Git. The example values are intended only for local development and must be changed before a production deployment.
 
 Build and start the backend and frontend services:
 
@@ -137,36 +145,42 @@ Build and start the backend and frontend services:
 docker compose up --build -d
 ```
 
-After both containers start, open the following addresses:
+Docker Compose automatically:
+
+- Applies all Alembic database migrations
+- Creates the demo company
+- Creates an Argon2-hashed administrator account
+- Creates repeatable product, customer, invoice, role, and profile data
+- Starts the FastAPI and Next.js services
+
+Open the following addresses:
 
 - Frontend: http://localhost:3000
 - Backend API: http://localhost:8000
 - Swagger UI: http://localhost:8000/docs
 
-The Docker environment automatically creates repeatable demo data:
+Demo login credentials:
 
-- Demo user ID: `1`
-- Username: `demo`
-- Password: `demo123`
-- One sample customer
-- One sample product
-- One sample invoice with an invoice line
+- Username: `admin`
+- Password: `DemoAdmin123!`
 
-The SQLite database is stored in the named Docker volume `invoice-data`. Demo records are created only when missing, so restarting the containers does not duplicate them.
+Use the **Authorize** button in Swagger to obtain and use a JWT access token.
 
-Check the running services:
+The SQLite database is stored in the named Docker volume `invoice-management-data`. Restarting the containers does not duplicate the demo records.
+
+Check the services:
 
 ```powershell
 docker compose ps
 ```
 
-View container logs:
+View backend logs:
 
 ```powershell
-docker compose logs
+docker compose logs backend
 ```
 
-Stop the application:
+Stop the application without deleting its data:
 
 ```powershell
 docker compose down
@@ -174,19 +188,32 @@ docker compose down
 
 ## Running the Backend
 
-Go to the backend folder:
+Create `.env` from the example file if it does not already exist:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Go to the backend directory:
 
 ```powershell
 cd backend
 ```
 
-Run the FastAPI server:
+Install the dependencies and apply the migrations:
 
 ```powershell
-.\venv\Scripts\python.exe -m uvicorn main:app --reload
+.\venv\Scripts\python.exe -m pip install -r requirements.txt
+.\venv\Scripts\python.exe -m alembic upgrade head
 ```
 
-After the server starts, open Swagger UI:
+Start FastAPI by loading the environment variables:
+
+```powershell
+.\venv\Scripts\python.exe -m uvicorn main:app --reload --env-file ..\.env
+```
+
+Swagger UI is available at:
 
 ```text
 http://127.0.0.1:8000/docs

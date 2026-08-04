@@ -1,133 +1,311 @@
+from decimal import Decimal
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 import models
 import schemas
-from database import get_db
 from auth import require_role
+from database import get_db
+
 
 router = APIRouter(
     prefix="/invoices",
-    tags=["Invoices"]
+    tags=["Invoices"],
 )
 
 
-@router.post("/", response_model=schemas.InvoiceResponse)
-def create_invoice(
-    invoice: schemas.InvoiceCreate,
-    user_id: int,
-    db: Session = Depends(get_db)
-):
-    require_role(user_id, "MANAGE_INVOICES", db)
+def get_company_id(current_user: models.User) -> int:
+    if current_user.CompanyId is None:
+        raise HTTPException(
+            status_code=400,
+            detail="Current user does not have a company context",
+        )
 
-    customer = db.query(models.Customer).filter(
-        models.Customer.CustomerId == invoice.CustomerId
-    ).first()
-
-    if customer is None:
-        raise HTTPException(status_code=404, detail="Customer not found")
-
-    invoice_data = invoice.model_dump(exclude={"Lines"})
-    new_invoice = models.Invoice(**invoice_data)
-
-    db.add(new_invoice)
-    db.commit()
-    db.refresh(new_invoice)
-
-    return new_invoice
+    return current_user.CompanyId
 
 
-@router.get("/", response_model=list[schemas.InvoiceResponse])
-def get_invoices(
-    user_id: int,
-    db: Session = Depends(get_db)
-):
-    require_role(user_id, "VIEW_INVOICES", db)
-
-    invoices = db.query(models.Invoice).all()
-    return invoices
-
-
-@router.get("/{invoice_id}", response_model=schemas.InvoiceDetailResponse)
-def get_invoice(invoice_id: int, user_id: int, db: Session = Depends(get_db)):
-    require_role(user_id, "VIEW_INVOICES", db)
-
-    invoice = db.query(models.Invoice).filter(
-        models.Invoice.InvoiceId == invoice_id
-    ).first()
-
-    if invoice is None:
-        raise HTTPException(status_code=404, detail="Invoice not found")
-
+def build_invoice_response(
+    invoice: models.Invoice,
+    db: Session,
+) -> dict:
     lines = db.query(models.InvoiceLine).filter(
-        models.InvoiceLine.InvoiceId == invoice_id
+        models.InvoiceLine.InvoiceId == invoice.InvoiceId,
+        models.InvoiceLine.CompanyId == invoice.CompanyId,
+    ).order_by(
+        models.InvoiceLine.InvoiceLineId
     ).all()
 
-    invoice_data = {
+    return {
         "InvoiceId": invoice.InvoiceId,
         "CustomerId": invoice.CustomerId,
         "InvoiceNumber": invoice.InvoiceNumber,
         "InvoiceDate": invoice.InvoiceDate,
         "TotalAmount": invoice.TotalAmount,
+        "CompanyId": invoice.CompanyId,
         "UserId": invoice.UserId,
         "RecordDate": invoice.RecordDate,
-        "Lines": lines
+        "Lines": lines,
     }
 
-    return invoice_data
 
-
-@router.put("/{invoice_id}", response_model=schemas.InvoiceResponse)
-def update_invoice(
-    invoice_id: int,
-    updated_invoice: schemas.InvoiceUpdate,
-    user_id: int,
-    db: Session = Depends(get_db)
+@router.post("/", response_model=schemas.InvoiceResponse)
+def create_invoice(
+    invoice: schemas.InvoiceCreate,
+    current_user: Annotated[
+        models.User,
+        Depends(require_role("MANAGE_INVOICES")),
+    ],
+    db: Session = Depends(get_db),
 ):
-    require_role(user_id, "MANAGE_INVOICES", db)
+    company_id = get_company_id(current_user)
+    invoice_number = invoice.InvoiceNumber.strip()
+
+    customer = db.query(models.Customer).filter(
+        models.Customer.CustomerId == invoice.CustomerId,
+        models.Customer.CompanyId == company_id,
+    ).first()
+
+    if customer is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Customer not found",
+        )
+
+    existing_invoice = db.query(models.Invoice).filter(
+        models.Invoice.CompanyId == company_id,
+        models.Invoice.InvoiceNumber == invoice_number,
+    ).first()
+
+    if existing_invoice is not None:
+        raise HTTPException(
+            status_code=400,
+            detail="Invoice number already exists in this company",
+        )
+
+    try:
+        new_invoice = models.Invoice(
+            CustomerId=invoice.CustomerId,
+            InvoiceNumber=invoice_number,
+            InvoiceDate=invoice.InvoiceDate,
+            TotalAmount=Decimal("0.00"),
+            CompanyId=company_id,
+            UserId=current_user.UserId,
+        )
+
+        db.add(new_invoice)
+        db.flush()
+
+        total_amount = Decimal("0.00")
+
+        for line in invoice.Lines:
+            product = db.query(models.Product).filter(
+                models.Product.ProductId == line.ProductId,
+                models.Product.CompanyId == company_id,
+            ).first()
+
+            if product is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail=(
+                        f"Product not found: {line.ProductId}"
+                    ),
+                )
+
+            line_price = (
+                line.Price
+                if line.Price is not None
+                else Decimal(product.UnitPrice)
+            )
+
+            new_line = models.InvoiceLine(
+                InvoiceId=new_invoice.InvoiceId,
+                ProductId=product.ProductId,
+                ItemName=product.ProductName,
+                Quantity=line.Quantity,
+                Price=line_price,
+                CompanyId=company_id,
+                UserId=current_user.UserId,
+            )
+
+            db.add(new_line)
+
+            total_amount += (
+                Decimal(line.Quantity) * Decimal(line_price)
+            )
+
+        new_invoice.TotalAmount = total_amount
+
+        db.commit()
+        db.refresh(new_invoice)
+
+    except Exception:
+        db.rollback()
+        raise
+
+    return build_invoice_response(new_invoice, db)
+
+
+@router.get("/", response_model=list[schemas.InvoiceResponse])
+def get_invoices(
+    current_user: Annotated[
+        models.User,
+        Depends(require_role("VIEW_INVOICES")),
+    ],
+    db: Session = Depends(get_db),
+):
+    company_id = get_company_id(current_user)
+
+    invoices = db.query(models.Invoice).filter(
+        models.Invoice.CompanyId == company_id
+    ).order_by(
+        models.Invoice.InvoiceDate.desc(),
+        models.Invoice.InvoiceId.desc(),
+    ).all()
+
+    return [
+        build_invoice_response(invoice, db)
+        for invoice in invoices
+    ]
+
+
+@router.get(
+    "/{invoice_id}",
+    response_model=schemas.InvoiceDetailResponse,
+)
+def get_invoice(
+    invoice_id: int,
+    current_user: Annotated[
+        models.User,
+        Depends(require_role("VIEW_INVOICES")),
+    ],
+    db: Session = Depends(get_db),
+):
+    company_id = get_company_id(current_user)
 
     invoice = db.query(models.Invoice).filter(
-        models.Invoice.InvoiceId == invoice_id
+        models.Invoice.InvoiceId == invoice_id,
+        models.Invoice.CompanyId == company_id,
     ).first()
 
     if invoice is None:
-        raise HTTPException(status_code=404, detail="Invoice not found")
+        raise HTTPException(
+            status_code=404,
+            detail="Invoice not found",
+        )
+
+    return build_invoice_response(invoice, db)
+
+
+@router.put(
+    "/{invoice_id}",
+    response_model=schemas.InvoiceResponse,
+)
+def update_invoice(
+    invoice_id: int,
+    updated_invoice: schemas.InvoiceUpdate,
+    current_user: Annotated[
+        models.User,
+        Depends(require_role("MANAGE_INVOICES")),
+    ],
+    db: Session = Depends(get_db),
+):
+    company_id = get_company_id(current_user)
+
+    invoice = db.query(models.Invoice).filter(
+        models.Invoice.InvoiceId == invoice_id,
+        models.Invoice.CompanyId == company_id,
+    ).first()
+
+    if invoice is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Invoice not found",
+        )
 
     update_data = updated_invoice.model_dump(exclude_unset=True)
 
     if "CustomerId" in update_data:
         customer = db.query(models.Customer).filter(
-            models.Customer.CustomerId == update_data["CustomerId"]
+            models.Customer.CustomerId == update_data["CustomerId"],
+            models.Customer.CompanyId == company_id,
         ).first()
 
         if customer is None:
-            raise HTTPException(status_code=404, detail="Customer not found")
+            raise HTTPException(
+                status_code=404,
+                detail="Customer not found",
+            )
 
-    for key, value in update_data.items():
-        setattr(invoice, key, value)
+    if (
+        "InvoiceNumber" in update_data
+        and update_data["InvoiceNumber"] is not None
+    ):
+        invoice_number = update_data["InvoiceNumber"].strip()
+
+        existing_invoice = db.query(models.Invoice).filter(
+            models.Invoice.CompanyId == company_id,
+            models.Invoice.InvoiceNumber == invoice_number,
+            models.Invoice.InvoiceId != invoice_id,
+        ).first()
+
+        if existing_invoice is not None:
+            raise HTTPException(
+                status_code=400,
+                detail="Invoice number already exists in this company",
+            )
+
+        update_data["InvoiceNumber"] = invoice_number
+
+    for field_name, value in update_data.items():
+        setattr(invoice, field_name, value)
+
+    invoice.UserId = current_user.UserId
 
     db.commit()
     db.refresh(invoice)
 
-    return invoice
+    return build_invoice_response(invoice, db)
 
 
 @router.delete("/{invoice_id}")
-def delete_invoice(invoice_id: int, user_id: int, db: Session = Depends(get_db)):
-    require_role(user_id, "MANAGE_INVOICES", db)
+def delete_invoice(
+    invoice_id: int,
+    current_user: Annotated[
+        models.User,
+        Depends(require_role("MANAGE_INVOICES")),
+    ],
+    db: Session = Depends(get_db),
+):
+    company_id = get_company_id(current_user)
 
     invoice = db.query(models.Invoice).filter(
-        models.Invoice.InvoiceId == invoice_id
+        models.Invoice.InvoiceId == invoice_id,
+        models.Invoice.CompanyId == company_id,
     ).first()
 
     if invoice is None:
-        raise HTTPException(status_code=404, detail="Invoice not found")
+        raise HTTPException(
+            status_code=404,
+            detail="Invoice not found",
+        )
 
-    db.query(models.InvoiceLine).filter(
-        models.InvoiceLine.InvoiceId == invoice_id
-    ).delete()
+    try:
+        db.query(models.InvoiceLine).filter(
+            models.InvoiceLine.InvoiceId == invoice_id,
+            models.InvoiceLine.CompanyId == company_id,
+        ).delete(synchronize_session=False)
 
-    db.delete(invoice)
-    db.commit()
+        db.delete(invoice)
+        db.commit()
 
-    return {"message": "Invoice and related invoice lines deleted successfully"}
+    except Exception:
+        db.rollback()
+        raise
+
+    return {
+        "message": (
+            "Invoice and related invoice lines deleted successfully"
+        )
+    }
