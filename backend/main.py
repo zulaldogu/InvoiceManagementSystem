@@ -2,8 +2,7 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from seed import seed_demo_data
-import models
-from database import engine
+
 from routers import (
     authentication,
     companies,
@@ -17,7 +16,7 @@ from routers import (
     user_profiles,
     users,
 )
-models.Base.metadata.create_all(bind=engine)
+
 if os.getenv("SEED_DEMO_DATA", "false").lower() == "true":
     seed_demo_data()
 

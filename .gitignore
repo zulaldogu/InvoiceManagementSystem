@@ -3,3 +3,6 @@ backend/venv/
 __pycache__/
 *.pyc
 backend/invoice_management.db
+.env
+.env.*
+!.env.example

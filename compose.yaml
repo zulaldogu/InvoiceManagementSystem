@@ -7,6 +7,10 @@ services:
     environment:
       DATABASE_URL: sqlite:////data/invoice_management.db
       SEED_DEMO_DATA: "true"
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?JWT_SECRET_KEY must be set in .env}
+      JWT_ACCESS_TOKEN_EXPIRE_MINUTES: ${JWT_ACCESS_TOKEN_EXPIRE_MINUTES:-60}
+      DEMO_ADMIN_USERNAME: ${DEMO_ADMIN_USERNAME:-admin}
+      DEMO_ADMIN_PASSWORD: ${DEMO_ADMIN_PASSWORD:?DEMO_ADMIN_PASSWORD must be set in .env}
     volumes:
       - invoice-data:/data
     healthcheck:
@@ -37,4 +41,4 @@ services:
 
 volumes:
   invoice-data:
-    name: invoice-data
+    name: invoice-management-data
