@@ -50,6 +50,7 @@ const pageTitles: Record<string, string> = {
   "/customers": "Müşteriler",
   "/products": "Ürünler",
   "/invoices": "Faturalar",
+  "/invoices/new": "Yeni Fatura",
 };
 
 function NavigationIcon({ name }: { name: IconName }) {

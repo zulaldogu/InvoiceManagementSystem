@@ -14,9 +14,7 @@ export default function InvoicesPage() {
   useEffect(() => {
     async function loadInvoices() {
       try {
-        const data = await apiRequest<Invoice[]>(
-          "/invoices/?user_id=1",
-        );
+        const data = await apiRequest<Invoice[]>("/invoices/");
         setInvoices(data);
       } catch (error) {
         setError(
@@ -35,26 +33,24 @@ export default function InvoicesPage() {
   return (
     <main className="min-h-screen bg-slate-950 px-8 py-10 text-slate-100">
       <section className="mx-auto max-w-6xl">
-        <Link
-          href="/"
-          className="mb-8 inline-flex text-sm font-medium text-cyan-300 transition hover:text-cyan-200"
-        >
-         ← Ana panele dön
-        </Link>
+        <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
+  <div>
+    <h1 className="text-3xl font-semibold tracking-tight">
+      Faturalar
+    </h1>
 
-        <div className="mb-8">
-          <p className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-cyan-300">
-            Fatura Yönetim Sistemi
-          </p>
+    <p className="mt-2 text-sm text-slate-400">
+      Firmanıza ait faturaları görüntüleyin ve yönetin.
+    </p>
+  </div>
 
-          <h1 className="text-4xl font-semibold tracking-tight">
-            Faturalar
-          </h1>
-
-          <p className="mt-4 text-slate-300">
-            FastAPI backend üzerinden alınan fatura kayıtları.
-          </p>
-        </div>
+  <Link
+    href="/invoices/new"
+    className="inline-flex items-center rounded-lg bg-cyan-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
+  >
+    + Yeni Fatura Oluştur
+  </Link>
+</div>
 
         {isLoading && (
           <p className="text-slate-300">Faturalar yükleniyor...</p>

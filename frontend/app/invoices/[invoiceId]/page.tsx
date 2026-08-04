@@ -19,8 +19,8 @@ export default function InvoiceDetailPage() {
     async function loadInvoice() {
       try {
         const data = await apiRequest<Invoice>(
-          `/invoices/${invoiceId}?user_id=1`,
-        );
+  `/invoices/${invoiceId}`,
+);
         setInvoice(data);
       } catch (error) {
         setError(
