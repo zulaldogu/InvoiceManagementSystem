@@ -210,41 +210,40 @@ class UserProfileResponse(UserProfileBase):
     model_config = ConfigDict(from_attributes=True)
 
 
-class InvoiceLineBase(BaseModel):
+class InvoiceLineCreate(BaseModel):
+    ProductId: int
+    Quantity: int = Field(gt=0)
+    Price: Optional[Decimal] = Field(default=None, ge=0)
+
+
+class InvoiceLineCreateRequest(InvoiceLineCreate):
+    InvoiceId: int
+
+
+class InvoiceLineUpdate(BaseModel):
+    ProductId: Optional[int] = None
+    Quantity: Optional[int] = Field(default=None, gt=0)
+    Price: Optional[Decimal] = Field(default=None, ge=0)
+
+
+class InvoiceLineResponse(BaseModel):
+    InvoiceLineId: int
     InvoiceId: int
     ProductId: int
     ItemName: Optional[str] = None
     Quantity: int
     Price: Decimal
+    CompanyId: Optional[int] = None
     UserId: Optional[int] = None
-
-
-class InvoiceLineCreate(InvoiceLineBase):
-    pass
-
-
-class InvoiceLineUpdate(BaseModel):
-    ProductId: Optional[int] = None
-    ItemName: Optional[str] = None
-    Quantity: Optional[int] = None
-    Price: Optional[Decimal] = None
-    UserId: Optional[int] = None
-
-
-class InvoiceLineResponse(InvoiceLineBase):
-    InvoiceLineId: int
-    InvoiceId: Optional[int] = None
     RecordDate: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class InvoiceBase(BaseModel):
-    CustomerId: Optional[int] = None
-    InvoiceNumber: str
+    CustomerId: int
+    InvoiceNumber: str = Field(min_length=1, max_length=20)
     InvoiceDate: Optional[datetime] = None
-    TotalAmount: Optional[Decimal] = None
-    UserId: Optional[int] = None
 
 
 class InvoiceCreate(InvoiceBase):
@@ -253,19 +252,19 @@ class InvoiceCreate(InvoiceBase):
 
 class InvoiceUpdate(BaseModel):
     CustomerId: Optional[int] = None
-    InvoiceNumber: Optional[str] = None
+    InvoiceNumber: Optional[str] = Field(
+        default=None,
+        min_length=1,
+        max_length=20,
+    )
     InvoiceDate: Optional[datetime] = None
-    TotalAmount: Optional[Decimal] = None
-    UserId: Optional[int] = None
-    Lines: Optional[List[InvoiceLineCreate]] = None
-
-
-class InvoiceDelete(BaseModel):
-    InvoiceId: int
 
 
 class InvoiceResponse(InvoiceBase):
     InvoiceId: int
+    TotalAmount: Optional[Decimal] = None
+    CompanyId: Optional[int] = None
+    UserId: Optional[int] = None
     RecordDate: Optional[datetime] = None
     Lines: List[InvoiceLineResponse] = Field(default_factory=list)
 
@@ -276,5 +275,6 @@ class InvoiceListRequest(BaseModel):
     StartDate: datetime
     EndDate: datetime
 
+
 class InvoiceDetailResponse(InvoiceResponse):
-    Lines: List[InvoiceLineResponse] = []
+    pass

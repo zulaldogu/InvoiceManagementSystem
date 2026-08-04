@@ -1,175 +1,304 @@
 from decimal import Decimal
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 import models
 import schemas
-from database import get_db
 from auth import require_role
+from database import get_db
+
 
 router = APIRouter(
     prefix="/invoice-lines",
-    tags=["Invoice Lines"]
+    tags=["Invoice Lines"],
 )
 
 
-def recalculate_invoice_total(invoice_id: int, db: Session):
-    invoice_lines = db.query(models.InvoiceLine).filter(
-        models.InvoiceLine.InvoiceId == invoice_id
-    ).all()
+def get_company_id(current_user: models.User) -> int:
+    if current_user.CompanyId is None:
+        raise HTTPException(
+            status_code=400,
+            detail="Current user does not have a company context",
+        )
 
-    total_amount = Decimal("0")
+    return current_user.CompanyId
 
-    for line in invoice_lines:
-        total_amount += Decimal(line.Quantity) * Decimal(line.Price)
 
+def recalculate_invoice_total(
+    invoice_id: int,
+    company_id: int,
+    db: Session,
+) -> None:
     invoice = db.query(models.Invoice).filter(
-        models.Invoice.InvoiceId == invoice_id
+        models.Invoice.InvoiceId == invoice_id,
+        models.Invoice.CompanyId == company_id,
     ).first()
 
-    if invoice is not None:
-        invoice.TotalAmount = total_amount
-        db.commit()
-        db.refresh(invoice)
+    if invoice is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Invoice not found",
+        )
+
+    invoice_lines = db.query(models.InvoiceLine).filter(
+        models.InvoiceLine.InvoiceId == invoice_id,
+        models.InvoiceLine.CompanyId == company_id,
+    ).all()
+
+    invoice.TotalAmount = sum(
+        (
+            Decimal(line.Quantity) * Decimal(line.Price)
+            for line in invoice_lines
+        ),
+        Decimal("0.00"),
+    )
 
 
 @router.post("/", response_model=schemas.InvoiceLineResponse)
 def create_invoice_line(
-    invoice_line: schemas.InvoiceLineCreate,
-    user_id: int,
-    db: Session = Depends(get_db)
+    invoice_line: schemas.InvoiceLineCreateRequest,
+    current_user: Annotated[
+        models.User,
+        Depends(require_role("MANAGE_INVOICES")),
+    ],
+    db: Session = Depends(get_db),
 ):
-    require_role(user_id, "MANAGE_INVOICES", db)
+    company_id = get_company_id(current_user)
 
     invoice = db.query(models.Invoice).filter(
-        models.Invoice.InvoiceId == invoice_line.InvoiceId
+        models.Invoice.InvoiceId == invoice_line.InvoiceId,
+        models.Invoice.CompanyId == company_id,
     ).first()
 
     if invoice is None:
-        raise HTTPException(status_code=404, detail="Invoice not found")
+        raise HTTPException(
+            status_code=404,
+            detail="Invoice not found",
+        )
 
     product = db.query(models.Product).filter(
-        models.Product.ProductId == invoice_line.ProductId
+        models.Product.ProductId == invoice_line.ProductId,
+        models.Product.CompanyId == company_id,
     ).first()
 
     if product is None:
-        raise HTTPException(status_code=404, detail="Product not found")
+        raise HTTPException(
+            status_code=404,
+            detail="Product not found",
+        )
 
-    new_invoice_line = models.InvoiceLine(
-        InvoiceId=invoice_line.InvoiceId,
-        ProductId=invoice_line.ProductId,
-        ItemName=product.ProductName,
-        Quantity=invoice_line.Quantity,
-        Price=product.UnitPrice,
-        UserId=invoice_line.UserId
+    line_price = (
+        invoice_line.Price
+        if invoice_line.Price is not None
+        else Decimal(product.UnitPrice)
     )
 
-    db.add(new_invoice_line)
-    db.commit()
-    db.refresh(new_invoice_line)
+    try:
+        new_invoice_line = models.InvoiceLine(
+            InvoiceId=invoice.InvoiceId,
+            ProductId=product.ProductId,
+            ItemName=product.ProductName,
+            Quantity=invoice_line.Quantity,
+            Price=line_price,
+            CompanyId=company_id,
+            UserId=current_user.UserId,
+        )
 
-    recalculate_invoice_total(invoice_line.InvoiceId, db)
+        db.add(new_invoice_line)
+        db.flush()
+
+        recalculate_invoice_total(
+            invoice.InvoiceId,
+            company_id,
+            db,
+        )
+
+        db.commit()
+        db.refresh(new_invoice_line)
+
+    except Exception:
+        db.rollback()
+        raise
 
     return new_invoice_line
 
 
-@router.get("/", response_model=list[schemas.InvoiceLineResponse])
+@router.get(
+    "/",
+    response_model=list[schemas.InvoiceLineResponse],
+)
 def get_invoice_lines(
-    user_id: int,
-    db: Session = Depends(get_db)
+    current_user: Annotated[
+        models.User,
+        Depends(require_role("VIEW_INVOICES")),
+    ],
+    db: Session = Depends(get_db),
 ):
-    require_role(user_id, "VIEW_INVOICES", db)
+    company_id = get_company_id(current_user)
 
-    invoice_lines = db.query(models.InvoiceLine).all()
-    return invoice_lines
+    return db.query(models.InvoiceLine).filter(
+        models.InvoiceLine.CompanyId == company_id
+    ).order_by(
+        models.InvoiceLine.InvoiceLineId
+    ).all()
 
 
-@router.get("/invoice/{invoice_id}", response_model=list[schemas.InvoiceLineResponse])
+@router.get(
+    "/invoice/{invoice_id}",
+    response_model=list[schemas.InvoiceLineResponse],
+)
 def get_lines_by_invoice(
     invoice_id: int,
-    user_id: int,
-    db: Session = Depends(get_db)
+    current_user: Annotated[
+        models.User,
+        Depends(require_role("VIEW_INVOICES")),
+    ],
+    db: Session = Depends(get_db),
 ):
-    require_role(user_id, "VIEW_INVOICES", db)
+    company_id = get_company_id(current_user)
 
     invoice = db.query(models.Invoice).filter(
-        models.Invoice.InvoiceId == invoice_id
+        models.Invoice.InvoiceId == invoice_id,
+        models.Invoice.CompanyId == company_id,
     ).first()
 
     if invoice is None:
-        raise HTTPException(status_code=404, detail="Invoice not found")
+        raise HTTPException(
+            status_code=404,
+            detail="Invoice not found",
+        )
 
-    invoice_lines = db.query(models.InvoiceLine).filter(
-        models.InvoiceLine.InvoiceId == invoice_id
+    return db.query(models.InvoiceLine).filter(
+        models.InvoiceLine.InvoiceId == invoice_id,
+        models.InvoiceLine.CompanyId == company_id,
+    ).order_by(
+        models.InvoiceLine.InvoiceLineId
     ).all()
 
-    return invoice_lines
 
-@router.put("/{invoice_line_id}", response_model=schemas.InvoiceLineResponse)
+@router.put(
+    "/{invoice_line_id}",
+    response_model=schemas.InvoiceLineResponse,
+)
 def update_invoice_line(
     invoice_line_id: int,
-    invoice_line: schemas.InvoiceLineUpdate,
-    user_id: int,
-    db: Session = Depends(get_db)
+    updated_line: schemas.InvoiceLineUpdate,
+    current_user: Annotated[
+        models.User,
+        Depends(require_role("MANAGE_INVOICES")),
+    ],
+    db: Session = Depends(get_db),
 ):
-    require_role(user_id, "MANAGE_INVOICES", db)
+    company_id = get_company_id(current_user)
 
-    db_invoice_line = db.query(models.InvoiceLine).filter(
-        models.InvoiceLine.InvoiceLineId == invoice_line_id
+    invoice_line = db.query(models.InvoiceLine).filter(
+        models.InvoiceLine.InvoiceLineId == invoice_line_id,
+        models.InvoiceLine.CompanyId == company_id,
     ).first()
 
-    if db_invoice_line is None:
-        raise HTTPException(status_code=404, detail="Invoice line not found")
+    if invoice_line is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Invoice line not found",
+        )
 
-    update_data = invoice_line.model_dump(exclude_unset=True)
+    update_data = updated_line.model_dump(exclude_unset=True)
 
-    if "ProductId" in update_data and update_data["ProductId"] is not None:
-        product = db.query(models.Product).filter(
-            models.Product.ProductId == update_data["ProductId"]
-        ).first()
+    try:
+        if (
+            "ProductId" in update_data
+            and update_data["ProductId"] is not None
+        ):
+            product = db.query(models.Product).filter(
+                models.Product.ProductId
+                == update_data["ProductId"],
+                models.Product.CompanyId == company_id,
+            ).first()
 
-        if product is None:
-            raise HTTPException(status_code=404, detail="Product not found")
+            if product is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Product not found",
+                )
 
-        db_invoice_line.ProductId = product.ProductId
-        db_invoice_line.ItemName = product.ProductName
-        db_invoice_line.Price = product.UnitPrice
+            invoice_line.ProductId = product.ProductId
+            invoice_line.ItemName = product.ProductName
 
-    if "Quantity" in update_data and update_data["Quantity"] is not None:
-        db_invoice_line.Quantity = update_data["Quantity"]
+            if "Price" not in update_data:
+                invoice_line.Price = product.UnitPrice
 
-    if "UserId" in update_data:
-        db_invoice_line.UserId = update_data["UserId"]
+        if (
+            "Quantity" in update_data
+            and update_data["Quantity"] is not None
+        ):
+            invoice_line.Quantity = update_data["Quantity"]
 
-    db.commit()
-    db.refresh(db_invoice_line)
+        if (
+            "Price" in update_data
+            and update_data["Price"] is not None
+        ):
+            invoice_line.Price = update_data["Price"]
 
-    recalculate_invoice_total(db_invoice_line.InvoiceId, db)
+        invoice_line.UserId = current_user.UserId
 
-    return db_invoice_line
+        db.flush()
+
+        recalculate_invoice_total(
+            invoice_line.InvoiceId,
+            company_id,
+            db,
+        )
+
+        db.commit()
+        db.refresh(invoice_line)
+
+    except Exception:
+        db.rollback()
+        raise
+
+    return invoice_line
 
 
 @router.delete("/{invoice_line_id}")
 def delete_invoice_line(
     invoice_line_id: int,
-    user_id: int,
-    db: Session = Depends(get_db)
+    current_user: Annotated[
+        models.User,
+        Depends(require_role("MANAGE_INVOICES")),
+    ],
+    db: Session = Depends(get_db),
 ):
-    require_role(user_id, "MANAGE_INVOICES", db)
+    company_id = get_company_id(current_user)
 
     invoice_line = db.query(models.InvoiceLine).filter(
-        models.InvoiceLine.InvoiceLineId == invoice_line_id
+        models.InvoiceLine.InvoiceLineId == invoice_line_id,
+        models.InvoiceLine.CompanyId == company_id,
     ).first()
 
     if invoice_line is None:
-        raise HTTPException(status_code=404, detail="Invoice line not found")
+        raise HTTPException(
+            status_code=404,
+            detail="Invoice line not found",
+        )
 
     invoice_id = invoice_line.InvoiceId
 
-    db.delete(invoice_line)
-    db.commit()
+    try:
+        db.delete(invoice_line)
+        db.flush()
 
-    recalculate_invoice_total(invoice_id, db)
+        recalculate_invoice_total(
+            invoice_id,
+            company_id,
+            db,
+        )
+
+        db.commit()
+
+    except Exception:
+        db.rollback()
+        raise
 
     return {"message": "Invoice line deleted successfully"}
