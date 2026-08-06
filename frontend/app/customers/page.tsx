@@ -6,6 +6,23 @@ import CustomerFormModal from "@/components/customer-form-modal";
 import { apiRequest } from "@/lib/api";
 import type { Customer } from "@/types/customer";
 
+function SearchIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-5 w-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+    >
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-4-4" />
+    </svg>
+  );
+}
+
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -165,13 +182,15 @@ export default function CustomersPage() {
   });
 
   return (
-    <main className="min-h-[calc(100vh-5rem)] bg-slate-950 px-6 py-8 text-slate-100 lg:px-10">
-      <section className="mx-auto max-w-7xl">
-        <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
+    <main className="min-h-[calc(100vh-5rem)] bg-background px-5 py-8 lg:px-8 lg:py-10">
+      <section className="mx-auto max-w-[1440px]">
+        <div className="mb-8 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
           <div>
-            <h2 className="text-3xl font-semibold">Müşteriler</h2>
+            <h1 className="text-3xl font-semibold tracking-tight text-foreground lg:text-4xl">
+              Müşteriler
+            </h1>
 
-            <p className="mt-2 text-sm text-slate-400">
+            <p className="mt-2 text-sm text-text-muted lg:text-base">
               Müşteri firma ve iletişim kayıtlarını yönetin.
             </p>
           </div>
@@ -179,31 +198,41 @@ export default function CustomersPage() {
           <button
             type="button"
             onClick={openCreateForm}
-            className="rounded-lg bg-cyan-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
+            className="inline-flex items-center justify-center gap-2 self-start rounded-md bg-primary px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark sm:self-auto"
           >
-            + Yeni Müşteri Ekle
+            <span className="text-xl leading-none">+</span>
+            Yeni Müşteri Ekle
           </button>
         </div>
 
-        <div className="mb-6 rounded-xl border border-slate-800 bg-slate-900 p-4">
-          <label htmlFor="customer-search" className="sr-only">
+        <div className="mb-6 rounded-lg border border-app-border bg-surface p-4 shadow-[0_4px_12px_rgba(15,23,42,0.03)]">
+          <label
+            htmlFor="customer-search"
+            className="mb-2 block text-xs font-semibold uppercase tracking-[0.1em] text-text-muted"
+          >
             Müşteri ara
           </label>
 
-          <input
-            id="customer-search"
-            type="search"
-            value={searchQuery}
-            onChange={(event) =>
-              setSearchQuery(event.target.value)
-            }
-            placeholder="Unvan, vergi numarası veya e-posta ile ara..."
-            className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none placeholder:text-slate-600 focus:border-cyan-400"
-          />
+          <div className="relative">
+            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-muted">
+              <SearchIcon />
+            </span>
+
+            <input
+              id="customer-search"
+              type="search"
+              value={searchQuery}
+              onChange={(event) =>
+                setSearchQuery(event.target.value)
+              }
+              placeholder="Unvan, vergi numarası veya e-posta ile ara..."
+              className="w-full rounded-md border border-app-border bg-surface px-4 py-3 pl-11 text-sm text-foreground outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary-soft"
+            />
+          </div>
         </div>
 
         {notice && (
-          <div className="mb-6 rounded-lg border border-emerald-800 bg-emerald-950/40 px-4 py-3 text-sm text-emerald-200">
+          <div className="mb-6 rounded-lg border border-green-200 bg-green-50 px-5 py-4 text-sm text-success">
             {notice}
           </div>
         )}
@@ -211,56 +240,95 @@ export default function CustomersPage() {
         {error && (
           <div
             role="alert"
-            className="mb-6 rounded-lg border border-red-800 bg-red-950/50 px-4 py-3 text-sm text-red-200"
+            className="mb-6 rounded-lg border border-red-200 bg-red-50 px-5 py-4 text-sm text-danger"
           >
             {error}
           </div>
         )}
 
         {isLoading ? (
-          <div className="rounded-xl border border-slate-800 bg-slate-900 p-8 text-slate-400">
+          <div className="rounded-lg border border-app-border bg-surface p-8 text-sm text-text-muted">
             Müşteriler yükleniyor...
           </div>
         ) : (
-          <div className="overflow-hidden rounded-xl border border-slate-800">
-            <div className="flex items-center justify-between border-b border-slate-800 bg-slate-900 px-5 py-4">
-              <p className="text-sm text-slate-400">
-                {filteredCustomers.length} müşteri gösteriliyor
+          <div className="overflow-hidden rounded-lg border border-app-border bg-surface shadow-[0_4px_12px_rgba(15,23,42,0.03)]">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-app-border px-6 py-4">
+              <p className="text-sm text-text-muted">
+                <span className="font-semibold text-foreground">
+                  {filteredCustomers.length}
+                </span>{" "}
+                müşteri gösteriliyor
               </p>
+
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="text-sm font-semibold text-primary transition hover:text-primary-dark"
+                >
+                  Aramayı temizle
+                </button>
+              )}
             </div>
 
             {filteredCustomers.length === 0 ? (
-              <div className="bg-slate-900/40 p-10 text-center text-slate-400">
-                {searchQuery
-                  ? "Arama kriterine uygun müşteri bulunamadı."
-                  : "Henüz müşteri kaydı bulunmuyor."}
+              <div className="px-6 py-14 text-center">
+                <p className="font-semibold text-foreground">
+                  {searchQuery
+                    ? "Arama kriterine uygun müşteri bulunamadı."
+                    : "Henüz müşteri kaydı bulunmuyor."}
+                </p>
+
+                <p className="mt-2 text-sm text-text-muted">
+                  {searchQuery
+                    ? "Farklı bir unvan, vergi numarası veya e-posta deneyin."
+                    : "Yeni bir müşteri ekleyerek başlayabilirsiniz."}
+                </p>
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[950px] text-left">
-                  <thead className="bg-slate-900 text-xs uppercase tracking-wider text-slate-500">
+                <table className="w-full min-w-[1000px] text-left">
+                  <thead className="bg-surface-muted text-xs uppercase tracking-[0.08em] text-text-muted">
                     <tr>
-                      <th className="px-6 py-4">Müşteri unvanı</th>
-                      <th className="px-6 py-4">Vergi numarası</th>
-                      <th className="px-6 py-4">E-posta</th>
-                      <th className="px-6 py-4">Adres</th>
-                      <th className="px-6 py-4 text-right">
+                      <th className="px-6 py-4 font-semibold">
+                        Müşteri unvanı
+                      </th>
+
+                      <th className="px-6 py-4 font-semibold">
+                        Vergi numarası
+                      </th>
+
+                      <th className="px-6 py-4 font-semibold">
+                        E-posta
+                      </th>
+
+                      <th className="px-6 py-4 font-semibold">
+                        Adres
+                      </th>
+
+                      <th className="px-6 py-4 text-right font-semibold">
                         İşlemler
                       </th>
                     </tr>
                   </thead>
 
-                  <tbody className="divide-y divide-slate-800">
+                  <tbody className="divide-y divide-app-border">
                     {filteredCustomers.map((customer) => (
                       <tr
                         key={customer.CustomerId}
-                        className="bg-slate-950 transition hover:bg-slate-900/70"
+                        className="transition hover:bg-surface-muted/60"
                       >
-                        <td className="px-6 py-4 font-medium text-cyan-300">
-                          {customer.Title}
+                        <td className="px-6 py-4">
+                          <p className="font-semibold text-foreground">
+                            {customer.Title}
+                          </p>
+
+                          <p className="mt-0.5 text-xs text-text-muted">
+                            ID: {customer.CustomerId}
+                          </p>
                         </td>
 
-                        <td className="px-6 py-4">
+                        <td className="px-6 py-4 text-sm text-text-muted">
                           {customer.TaxNumber ?? "—"}
                         </td>
 
@@ -268,16 +336,18 @@ export default function CustomersPage() {
                           {customer.EMail ? (
                             <a
                               href={`mailto:${customer.EMail}`}
-                              className="text-slate-300 transition hover:text-cyan-300"
+                              className="text-sm font-medium text-primary transition hover:text-primary-dark"
                             >
                               {customer.EMail}
                             </a>
                           ) : (
-                            "—"
+                            <span className="text-sm text-text-muted">
+                              —
+                            </span>
                           )}
                         </td>
 
-                        <td className="max-w-xs px-6 py-4 text-sm text-slate-400">
+                        <td className="max-w-sm px-6 py-4 text-sm leading-6 text-text-muted">
                           <span className="line-clamp-2">
                             {customer.Address ?? "—"}
                           </span>
@@ -290,7 +360,7 @@ export default function CustomersPage() {
                               onClick={() =>
                                 openEditForm(customer)
                               }
-                              className="rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 transition hover:border-cyan-400 hover:text-cyan-300"
+                              className="rounded-md border border-app-border px-3 py-2 text-sm font-semibold text-primary transition hover:border-primary hover:bg-primary-soft"
                             >
                               Düzenle
                             </button>
@@ -304,7 +374,7 @@ export default function CustomersPage() {
                               onClick={() =>
                                 handleDelete(customer)
                               }
-                              className="rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 transition hover:border-red-500 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-50"
+                              className="rounded-md border border-app-border px-3 py-2 text-sm font-semibold text-danger transition hover:border-danger hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
                             >
                               {deletingCustomerId ===
                               customer.CustomerId
