@@ -1,6 +1,7 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import type { FormEvent } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import {
@@ -9,6 +10,12 @@ import {
   login,
 } from "@/lib/api";
 import type { CurrentUser } from "@/types/auth";
+
+const features = [
+  "Firma bazlı güvenli veri erişimi",
+  "JWT ile korunan kullanıcı oturumları",
+  "Merkezi müşteri, ürün ve fatura yönetimi",
+];
 
 export default function LoginPage() {
   const router = useRouter();
@@ -62,148 +69,200 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-100 lg:grid lg:grid-cols-2">
-      <section className="hidden bg-slate-950 p-12 text-white lg:flex lg:flex-col lg:justify-between">
-        <div>
+    <main className="min-h-screen bg-background lg:grid lg:grid-cols-[minmax(380px,5fr)_minmax(520px,7fr)]">
+      <section className="relative hidden overflow-hidden border-r border-app-border bg-primary-soft p-12 lg:flex lg:flex-col lg:justify-between">
+        <div
+          aria-hidden="true"
+          className="absolute -right-32 -top-32 h-96 w-96 rounded-full border-[70px] border-white/30"
+        />
+
+        <div
+          aria-hidden="true"
+          className="absolute -bottom-40 -left-40 h-[420px] w-[420px] rounded-full border-[80px] border-primary/5"
+        />
+
+        <div className="relative">
           <div className="flex items-center gap-3">
-            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-400 text-lg font-bold text-slate-950">
+            <span className="flex h-12 w-12 items-center justify-center rounded-md bg-primary text-lg font-bold text-white shadow-sm">
               FY
             </span>
 
             <div>
-              <p className="font-semibold">Fatura Yönetim Sistemi</p>
-              <p className="text-sm text-slate-400">
+              <p className="text-lg font-semibold text-primary-dark">
+                Fatura Yönetimi
+              </p>
+
+              <p className="text-sm text-text-muted">
                 Kurumsal yönetim platformu
               </p>
             </div>
           </div>
         </div>
 
-        <div className="max-w-xl">
-          <p className="mb-4 text-sm font-semibold uppercase tracking-[0.25em] text-cyan-300">
+        <div className="relative max-w-xl">
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary">
             Güvenli ve merkezi yönetim
           </p>
 
-          <h1 className="text-4xl font-semibold leading-tight">
+          <h1 className="mt-5 text-4xl font-semibold leading-tight tracking-tight text-foreground xl:text-5xl">
             Fatura süreçlerinizi tek bir panel üzerinden yönetin.
           </h1>
 
-          <p className="mt-6 max-w-lg leading-7 text-slate-300">
-            Müşteri, ürün, fatura ve yetkilendirme işlemlerine
-            firma bazlı veri izolasyonu ve güvenli kullanıcı
-            doğrulamasıyla erişin.
+          <p className="mt-6 max-w-lg text-base leading-7 text-text-muted">
+            Müşteri, ürün ve fatura işlemlerine güvenli kullanıcı
+            doğrulaması ve firma bazlı veri izolasyonuyla erişin.
           </p>
 
-          <ul className="mt-10 space-y-4 text-sm text-slate-300">
-            {[
-                "Firma bazlı güvenli veri erişimi",
-                "Yetkilere göre kontrollü işlemler",
-                "Merkezi müşteri, ürün ve fatura yönetimi",
-            ].map((feature) => (
-                <li key={feature} className="flex items-center gap-3">
-                    <span className="h-2 w-2 rounded-full bg-cyan-400" />
-                    <span>{feature}</span>
-                </li>
-                ))}
-            </ul>
+          <ul className="mt-10 space-y-4">
+            {features.map((feature) => (
+              <li
+                key={feature}
+                className="flex items-center gap-3 text-sm font-medium text-foreground"
+              >
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">
+                  ✓
+                </span>
+
+                <span>{feature}</span>
+              </li>
+            ))}
+          </ul>
         </div>
 
-        <p className="text-sm text-slate-500">
+        <p className="relative text-sm text-text-muted">
           © 2026 Fatura Yönetim Sistemi
         </p>
       </section>
 
-      <section className="flex min-h-screen items-center justify-center px-6 py-12">
-        <div className="w-full max-w-md">
-          <div className="mb-8 lg:hidden">
-            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-500 font-bold text-white">
+      <section className="flex min-h-screen items-center justify-center px-5 py-10 sm:px-8 lg:px-12">
+        <div className="w-full max-w-lg">
+          <div className="mb-8 flex items-center gap-3 lg:hidden">
+            <span className="flex h-11 w-11 items-center justify-center rounded-md bg-primary font-bold text-white">
               FY
             </span>
+
+            <div>
+              <p className="font-semibold text-primary-dark">
+                Fatura Yönetimi
+              </p>
+
+              <p className="text-xs text-text-muted">
+                Kurumsal Panel
+              </p>
+            </div>
           </div>
 
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-cyan-700">
-            Yönetim paneli
-          </p>
+          <div className="rounded-xl border border-app-border bg-surface p-6 shadow-[0_12px_35px_rgba(15,23,42,0.07)] sm:p-8">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+              Yönetim paneli
+            </p>
 
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">
-            Hesabınıza giriş yapın
-          </h2>
+            <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground">
+              Hesabınıza giriş yapın
+            </h2>
 
-          <p className="mt-3 text-sm leading-6 text-slate-600">
-            Firma hesabınıza erişmek için kullanıcı bilgilerinizi
-            girin.
-          </p>
+            <p className="mt-3 text-sm leading-6 text-text-muted">
+              Firma hesabınıza erişmek için kullanıcı bilgilerinizi
+              girin.
+            </p>
 
-          <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
-            <div>
-              <label
-                htmlFor="username"
-                className="mb-2 block text-sm font-medium text-slate-700"
-              >
-                Kullanıcı adı
-              </label>
-
-              <input
-                id="username"
-                name="username"
-                type="text"
-                autoComplete="username"
-                required
-                value={username}
-                onChange={(event) => setUsername(event.target.value)}
-                className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-cyan-600 focus:ring-4 focus:ring-cyan-100"
-                placeholder="Kullanıcı adınızı girin"
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="password"
-                className="mb-2 block text-sm font-medium text-slate-700"
-              >
-                Parola
-              </label>
-
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-cyan-600 focus:ring-4 focus:ring-cyan-100"
-                placeholder="Parolanızı girin"
-              />
-            </div>
-
-            {error && (
-              <div
-                role="alert"
-                className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-              >
-                {error}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full rounded-lg bg-cyan-600 px-4 py-3 font-semibold text-white transition hover:bg-cyan-700 disabled:cursor-not-allowed disabled:opacity-60"
+            <form
+              className="mt-8 space-y-5"
+              onSubmit={handleSubmit}
             >
-              {isSubmitting ? "Giriş yapılıyor..." : "Giriş yap"}
-            </button>
-          </form>
+              <div>
+                <label
+                  htmlFor="username"
+                  className="mb-2 block text-sm font-semibold text-foreground"
+                >
+                  Kullanıcı adı
+                </label>
 
-          <div className="mt-8 rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-600">
-            <p className="font-semibold text-slate-800">Demo hesabı</p>
-            <p className="mt-2">
-              Kullanıcı adı: <strong>admin</strong>
-            </p>
-            <p>
-              Parola: <strong>DemoAdmin123!</strong>
-            </p>
+                <input
+                  id="username"
+                  name="username"
+                  type="text"
+                  autoComplete="username"
+                  required
+                  value={username}
+                  onChange={(event) =>
+                    setUsername(event.target.value)
+                  }
+                  className="w-full rounded-md border border-app-border bg-surface px-4 py-3 text-foreground outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary-soft"
+                  placeholder="Kullanıcı adınızı girin"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="password"
+                  className="mb-2 block text-sm font-semibold text-foreground"
+                >
+                  Parola
+                </label>
+
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  autoComplete="current-password"
+                  required
+                  value={password}
+                  onChange={(event) =>
+                    setPassword(event.target.value)
+                  }
+                  className="w-full rounded-md border border-app-border bg-surface px-4 py-3 text-foreground outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary-soft"
+                  placeholder="Parolanızı girin"
+                />
+              </div>
+
+              {error && (
+                <div
+                  role="alert"
+                  className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-danger"
+                >
+                  {error}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full rounded-md bg-primary px-4 py-3 font-semibold text-white shadow-sm transition hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isSubmitting
+                  ? "Giriş yapılıyor..."
+                  : "Giriş yap"}
+              </button>
+            </form>
+
+            <div className="mt-7 rounded-md border border-app-border bg-surface-muted p-4 text-sm text-text-muted">
+              <p className="font-semibold text-foreground">
+                Demo hesabı
+              </p>
+
+              <div className="mt-2 grid gap-1 sm:grid-cols-2">
+                <p>
+                  Kullanıcı adı:{" "}
+                  <strong className="text-foreground">
+                    admin
+                  </strong>
+                </p>
+
+                <p>
+                  Parola:{" "}
+                  <strong className="text-foreground">
+                    DemoAdmin123!
+                  </strong>
+                </p>
+              </div>
+            </div>
           </div>
+
+          <p className="mt-6 text-center text-xs leading-5 text-text-muted">
+            Giriş yaparak yalnızca bağlı olduğunuz firma kapsamındaki
+            verilere erişirsiniz.
+          </p>
         </div>
       </section>
     </main>

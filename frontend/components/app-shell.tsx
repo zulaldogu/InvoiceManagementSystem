@@ -16,7 +16,11 @@ type AppShellProps = {
   children: ReactNode;
 };
 
-type IconName = "dashboard" | "customers" | "products" | "invoices";
+type IconName =
+  | "dashboard"
+  | "customers"
+  | "products"
+  | "invoices";
 
 const navigation: {
   label: string;
@@ -29,29 +33,21 @@ const navigation: {
     icon: "dashboard",
   },
   {
+    label: "Faturalar",
+    href: "/invoices",
+    icon: "invoices",
+  },
+  {
     label: "Müşteriler",
     href: "/customers",
     icon: "customers",
   },
   {
-    label: "Ürünler",
+    label: "Ürün ve Hizmetler",
     href: "/products",
     icon: "products",
   },
-  {
-    label: "Faturalar",
-    href: "/invoices",
-    icon: "invoices",
-  },
 ];
-
-const pageTitles: Record<string, string> = {
-  "/": "Genel Bakış",
-  "/customers": "Müşteriler",
-  "/products": "Ürünler",
-  "/invoices": "Faturalar",
-  "/invoices/new": "Yeni Fatura",
-};
 
 function NavigationIcon({ name }: { name: IconName }) {
   const paths = {
@@ -93,7 +89,7 @@ function NavigationIcon({ name }: { name: IconName }) {
     <svg
       aria-hidden="true"
       viewBox="0 0 24 24"
-      className="h-5 w-5"
+      className="h-5 w-5 shrink-0"
       fill="none"
       stroke="currentColor"
       strokeWidth="1.8"
@@ -101,6 +97,41 @@ function NavigationIcon({ name }: { name: IconName }) {
       strokeLinejoin="round"
     >
       {paths[name]}
+    </svg>
+  );
+}
+
+function MenuIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-6 w-6"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+    >
+      <path d="M4 6h16" />
+      <path d="M4 12h16" />
+      <path d="M4 18h16" />
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-6 w-6"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+    >
+      <path d="m6 6 12 12" />
+      <path d="m18 6-12 12" />
     </svg>
   );
 }
@@ -120,6 +151,8 @@ export default function AppShell({ children }: AppShellProps) {
   const [currentUser, setCurrentUser] =
     useState<CurrentUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] =
+    useState(false);
 
   const isLoginPage = pathname === "/login";
 
@@ -163,8 +196,13 @@ export default function AppShell({ children }: AppShellProps) {
   function handleLogout() {
     clearAccessToken();
     setCurrentUser(null);
+    setIsMobileMenuOpen(false);
     router.replace("/login");
     router.refresh();
+  }
+
+  function closeMobileMenu() {
+    setIsMobileMenuOpen(false);
   }
 
   if (isLoginPage) {
@@ -173,10 +211,11 @@ export default function AppShell({ children }: AppShellProps) {
 
   if (isLoading || !currentUser) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-950 text-white">
+      <main className="flex min-h-screen items-center justify-center bg-background text-foreground">
         <div className="text-center">
-          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-slate-700 border-t-cyan-400" />
-          <p className="mt-4 text-sm text-slate-400">
+          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-primary-soft border-t-primary" />
+
+          <p className="mt-4 text-sm text-text-muted">
             Oturum doğrulanıyor...
           </p>
         </div>
@@ -184,28 +223,68 @@ export default function AppShell({ children }: AppShellProps) {
     );
   }
 
-  const pageTitle =
-    pageTitles[pathname] ??
-    (pathname.startsWith("/invoices/")
-      ? "Fatura Detayı"
-      : "Yönetim Paneli");
-
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-72 flex-col border-r border-slate-800 bg-slate-950 lg:flex">
-        <div className="flex h-20 items-center gap-3 border-b border-slate-800 px-6">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-400 font-bold text-slate-950">
-            FY
-          </span>
+    <div className="min-h-screen bg-background text-foreground">
+      {isMobileMenuOpen && (
+        <button
+          type="button"
+          aria-label="Menüyü kapat"
+          onClick={closeMobileMenu}
+          className="fixed inset-0 z-30 bg-slate-950/40 backdrop-blur-[2px] lg:hidden"
+        />
+      )}
 
-          <div>
-            <p className="font-semibold">Fatura Yönetimi</p>
-            <p className="text-xs text-slate-500">Kurumsal Panel</p>
-          </div>
+      <aside
+        className={`fixed inset-y-0 left-0 z-40 flex w-[280px] flex-col border-r border-app-border bg-surface transition-transform duration-200 lg:translate-x-0 ${
+          isMobileMenuOpen
+            ? "translate-x-0"
+            : "-translate-x-full"
+        }`}
+      >
+        <div className="flex h-20 items-center justify-between border-b border-app-border px-6">
+          <Link
+            href="/"
+            onClick={closeMobileMenu}
+            className="flex min-w-0 items-center gap-3"
+          >
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary font-bold text-white">
+              FY
+            </span>
+
+            <span className="min-w-0">
+              <span className="block truncate text-base font-semibold text-primary-dark">
+                Fatura Yönetimi
+              </span>
+
+              <span className="block truncate text-xs text-text-muted">
+                Kurumsal Panel
+              </span>
+            </span>
+          </Link>
+
+          <button
+            type="button"
+            aria-label="Menüyü kapat"
+            onClick={closeMobileMenu}
+            className="rounded-md p-2 text-text-muted transition hover:bg-surface-muted hover:text-primary lg:hidden"
+          >
+            <CloseIcon />
+          </button>
+        </div>
+
+        <div className="px-5 pt-6">
+          <Link
+            href="/invoices/new"
+            onClick={closeMobileMenu}
+            className="flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark"
+          >
+            <span className="text-xl leading-none">+</span>
+            Yeni Fatura Oluştur
+          </Link>
         </div>
 
         <nav className="flex-1 space-y-1 px-4 py-6">
-          <p className="mb-3 px-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
+          <p className="mb-3 px-3 text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
             Ana Menü
           </p>
 
@@ -216,69 +295,72 @@ export default function AppShell({ children }: AppShellProps) {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition ${
+                onClick={closeMobileMenu}
+                className={`relative flex items-center gap-3 rounded-md px-4 py-3 text-sm font-medium transition ${
                   isActive
-                    ? "bg-cyan-400 text-slate-950"
-                    : "text-slate-400 hover:bg-slate-900 hover:text-white"
+                    ? "bg-primary-soft text-primary-dark"
+                    : "text-text-muted hover:bg-surface-muted hover:text-primary-dark"
                 }`}
               >
+                {isActive && (
+                  <span className="absolute inset-y-2 left-0 w-1 rounded-r-full bg-primary" />
+                )}
+
                 <NavigationIcon name={item.icon} />
                 {item.label}
               </Link>
             );
           })}
         </nav>
-
-        <div className="border-t border-slate-800 p-4">
-          <div className="rounded-xl bg-slate-900 p-4">
-            <div className="flex items-center gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-800 font-semibold text-cyan-300">
-                {currentUser.UserName.charAt(0).toUpperCase()}
-              </span>
-
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold">
-                  {currentUser.UserName}
-                </p>
-                <p className="truncate text-xs text-slate-500">
-                  {currentUser.IsSuperAdmin
-                    ? "Süper Yönetici"
-                    : `Firma #${currentUser.CompanyId}`}
-                </p>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="mt-4 w-full rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 transition hover:border-red-500 hover:bg-red-500/10 hover:text-red-300"
-            >
-              Oturumu kapat
-            </button>
-          </div>
-        </div>
       </aside>
 
-      <div className="lg:pl-72">
-        <header className="sticky top-0 z-20 flex h-20 items-center justify-between border-b border-slate-800 bg-slate-950/95 px-6 backdrop-blur lg:px-10">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-400">
-              Fatura Yönetim Sistemi
-            </p>
-            <h1 className="mt-1 text-lg font-semibold">{pageTitle}</h1>
-          </div>
-
-          <div className="flex items-center gap-3 lg:hidden">
-            <span className="text-sm font-medium">
-              {currentUser.UserName}
-            </span>
-
+      <div className="min-h-screen lg:pl-[280px]">
+        <header className="sticky top-0 z-20 flex h-20 items-center justify-between border-b border-app-border bg-surface/95 px-5 backdrop-blur lg:px-8">
+          <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={handleLogout}
-              className="rounded-lg border border-slate-700 px-3 py-2 text-xs"
+              aria-label="Menüyü aç"
+              aria-expanded={isMobileMenuOpen}
+              onClick={() => setIsMobileMenuOpen(true)}
+              className="rounded-md p-2 text-text-muted transition hover:bg-surface-muted hover:text-primary lg:hidden"
             >
-              Çıkış
+              <MenuIcon />
+            </button>
+
+            <p className="text-base font-semibold text-foreground">
+              Fatura Yönetim Sistemi
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="hidden text-right sm:block">
+              <p className="text-sm font-semibold text-foreground">
+                {currentUser.UserName}
+              </p>
+
+              <p className="text-xs text-text-muted">
+                {currentUser.IsSuperAdmin
+                  ? "Süper Yönetici"
+                  : `Firma #${currentUser.CompanyId}`}
+              </p>
+            </div>
+
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-soft text-sm font-semibold text-primary-dark">
+              {currentUser.UserName.charAt(0).toUpperCase()}
+            </span>
+
+                        <button
+              type="button"
+              onClick={handleLogout}
+              className="inline-flex rounded-md px-3 py-2 text-sm font-medium text-danger transition hover:bg-red-50"
+            >
+              <span className="hidden sm:inline">
+                Oturumu kapat
+              </span>
+
+              <span className="sm:hidden">
+                Çıkış
+              </span>
             </button>
           </div>
         </header>

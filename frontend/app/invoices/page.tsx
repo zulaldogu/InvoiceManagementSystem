@@ -4,119 +4,321 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { apiRequest } from "@/lib/api";
+import type { Customer } from "@/types/customer";
 import type { Invoice } from "@/types/invoice";
+
+function formatCurrency(value: string | null) {
+  return new Intl.NumberFormat("tr-TR", {
+    style: "currency",
+    currency: "TRY",
+  }).format(Number(value ?? 0));
+}
+
+function formatDate(value: string | null) {
+  if (!value) {
+    return "Tarih belirtilmemiş";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Geçersiz tarih";
+  }
+
+  return new Intl.DateTimeFormat("tr-TR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date);
+}
+
+function SearchIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-5 w-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+    >
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-4-4" />
+    </svg>
+  );
+}
 
 export default function InvoicesPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function loadInvoices() {
+    let isActive = true;
+
+    async function loadInvoicePage() {
       try {
-        const data = await apiRequest<Invoice[]>("/invoices/");
-        setInvoices(data);
+        const [invoiceData, customerData] = await Promise.all([
+          apiRequest<Invoice[]>("/invoices/"),
+          apiRequest<Customer[]>("/customers/"),
+        ]);
+
+        if (!isActive) {
+          return;
+        }
+
+        setInvoices(invoiceData);
+        setCustomers(customerData);
       } catch (error) {
+        if (!isActive) {
+          return;
+        }
+
         setError(
           error instanceof Error
             ? error.message
-            : "Beklenmeyen bir hata oluştu.",
+            : "Faturalar alınırken beklenmeyen bir hata oluştu.",
         );
       } finally {
-        setIsLoading(false);
+        if (isActive) {
+          setIsLoading(false);
+        }
       }
     }
 
-    loadInvoices();
+    loadInvoicePage();
+
+    return () => {
+      isActive = false;
+    };
   }, []);
 
+  const customerNames = new Map(
+    customers.map((customer) => [
+      customer.CustomerId,
+      customer.Title,
+    ]),
+  );
+
+  const normalizedQuery = searchQuery
+    .trim()
+    .toLocaleLowerCase("tr-TR");
+
+  const filteredInvoices = invoices.filter((invoice) => {
+    if (!normalizedQuery) {
+      return true;
+    }
+
+    const customerName =
+      customerNames.get(invoice.CustomerId) ?? "";
+
+    const formattedDate = formatDate(invoice.InvoiceDate);
+
+    return (
+      invoice.InvoiceNumber.toLocaleLowerCase("tr-TR").includes(
+        normalizedQuery,
+      ) ||
+      customerName.toLocaleLowerCase("tr-TR").includes(
+        normalizedQuery,
+      ) ||
+      String(invoice.CustomerId).includes(normalizedQuery) ||
+      formattedDate
+        .toLocaleLowerCase("tr-TR")
+        .includes(normalizedQuery)
+    );
+  });
+
   return (
-    <main className="min-h-screen bg-slate-950 px-8 py-10 text-slate-100">
-      <section className="mx-auto max-w-6xl">
-        <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
-  <div>
-    <h1 className="text-3xl font-semibold tracking-tight">
-      Faturalar
-    </h1>
+    <main className="min-h-[calc(100vh-5rem)] bg-background px-5 py-8 lg:px-8 lg:py-10">
+      <section className="mx-auto max-w-[1440px]">
+        <div className="mb-8 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+          <div>
+            <h1 className="text-3xl font-semibold tracking-tight text-foreground lg:text-4xl">
+              Faturalar
+            </h1>
 
-    <p className="mt-2 text-sm text-slate-400">
-      Firmanıza ait faturaları görüntüleyin ve yönetin.
-    </p>
-  </div>
+            <p className="mt-2 text-sm text-text-muted lg:text-base">
+              Firmanıza ait faturaları görüntüleyin ve yönetin.
+            </p>
+          </div>
 
-  <Link
-    href="/invoices/new"
-    className="inline-flex items-center rounded-lg bg-cyan-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
-  >
-    + Yeni Fatura Oluştur
-  </Link>
-</div>
+          <Link
+            href="/invoices/new"
+            className="inline-flex items-center justify-center gap-2 self-start rounded-md bg-primary px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark sm:self-auto"
+          >
+            <span className="text-xl leading-none">+</span>
+            Yeni Fatura Oluştur
+          </Link>
+        </div>
 
-        {isLoading && (
-          <p className="text-slate-300">Faturalar yükleniyor...</p>
-        )}
+        <div className="mb-6 rounded-lg border border-app-border bg-surface p-4 shadow-[0_4px_12px_rgba(15,23,42,0.03)]">
+          <label
+            htmlFor="invoice-search"
+            className="mb-2 block text-xs font-semibold uppercase tracking-[0.1em] text-text-muted"
+          >
+            Fatura ara
+          </label>
+
+          <div className="relative">
+            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-muted">
+              <SearchIcon />
+            </span>
+
+            <input
+              id="invoice-search"
+              type="search"
+              value={searchQuery}
+              onChange={(event) =>
+                setSearchQuery(event.target.value)
+              }
+              placeholder="Fatura numarası, müşteri veya tarih ile ara..."
+              className="w-full rounded-md border border-app-border bg-surface px-4 py-3 pl-11 text-sm text-foreground outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary-soft"
+            />
+          </div>
+        </div>
 
         {error && (
-          <div className="rounded-lg border border-red-800 bg-red-950/50 p-4 text-red-200">
-            {error}
+          <div
+            role="alert"
+            className="mb-6 rounded-lg border border-red-200 bg-red-50 px-5 py-4 text-sm text-danger"
+          >
+            <p className="font-semibold">
+              Faturalar yüklenemedi
+            </p>
+
+            <p className="mt-1">{error}</p>
           </div>
         )}
 
-        {!isLoading && !error && invoices.length === 0 && (
-          <p className="text-slate-300">Fatura bulunamadı.</p>
-        )}
+        {isLoading ? (
+          <div className="rounded-lg border border-app-border bg-surface p-8 text-sm text-text-muted">
+            Faturalar yükleniyor...
+          </div>
+        ) : error ? null : (
+          <div className="overflow-hidden rounded-lg border border-app-border bg-surface shadow-[0_4px_12px_rgba(15,23,42,0.03)]">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-app-border px-6 py-4">
+              <p className="text-sm text-text-muted">
+                <span className="font-semibold text-foreground">
+                  {filteredInvoices.length}
+                </span>{" "}
+                fatura gösteriliyor
+              </p>
 
-        {!isLoading && !error && invoices.length > 0 && (
-          <div className="overflow-x-auto rounded-lg border border-slate-800">
-            <table className="w-full text-left">
-              <thead className="bg-slate-900 text-sm text-slate-300">
-                <tr>
-                  <th className="px-5 py-4">Fatura numarası</th>
-                  <th className="px-5 py-4">Müşteri ID</th>
-                  <th className="px-5 py-4">Fatura tarihi</th>
-                  <th className="px-5 py-4">Toplam tutar</th>
-                  <th className="px-5 py-4">İşlemler</th>
-                </tr>
-              </thead>
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="text-sm font-semibold text-primary transition hover:text-primary-dark"
+                >
+                  Aramayı temizle
+                </button>
+              )}
+            </div>
 
-              <tbody className="divide-y divide-slate-800">
-                {invoices.map((invoice) => (
-                  <tr
-                    key={invoice.InvoiceId}
-                    className="bg-slate-950"
+            {filteredInvoices.length === 0 ? (
+              <div className="px-6 py-14 text-center">
+                <p className="font-semibold text-foreground">
+                  {searchQuery
+                    ? "Arama kriterine uygun fatura bulunamadı."
+                    : "Henüz fatura kaydı bulunmuyor."}
+                </p>
+
+                <p className="mt-2 text-sm text-text-muted">
+                  {searchQuery
+                    ? "Farklı bir fatura numarası, müşteri veya tarih deneyin."
+                    : "İlk faturanızı oluşturarak başlayabilirsiniz."}
+                </p>
+
+                {!searchQuery && (
+                  <Link
+                    href="/invoices/new"
+                    className="mt-5 inline-flex rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-dark"
                   >
-                    <td className="px-5 py-4 font-medium text-cyan-300">
-                      {invoice.InvoiceNumber}
-                    </td>
+                    İlk faturayı oluştur
+                  </Link>
+                )}
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[850px] text-left">
+                  <thead className="bg-surface-muted text-xs uppercase tracking-[0.08em] text-text-muted">
+                    <tr>
+                      <th className="px-6 py-4 font-semibold">
+                        Fatura numarası
+                      </th>
 
-                    <td className="px-5 py-4">
-                      {invoice.CustomerId ?? "Belirtilmemiş"}
-                    </td>
+                      <th className="px-6 py-4 font-semibold">
+                        Müşteri
+                      </th>
 
-                    <td className="px-5 py-4">
-                      {invoice.InvoiceDate
-                        ? new Date(
-                            invoice.InvoiceDate,
-                          ).toLocaleDateString("tr-TR")
-                        : "Not specified"}
-                    </td>
+                      <th className="px-6 py-4 font-semibold">
+                        Fatura tarihi
+                      </th>
 
-                    <td className="px-5 py-4">
-                      {invoice.TotalAmount ?? "0.00"}
-                    </td>
+                      <th className="px-6 py-4 text-right font-semibold">
+                        Vergi hariç toplam
+                      </th>
 
-                    <td className="px-5 py-4">
-                      <Link
-                        href={`/invoices/${invoice.InvoiceId}`}
-                        className="font-medium text-cyan-300 transition hover:text-cyan-200"
+                      <th className="px-6 py-4 text-right font-semibold">
+                        İşlemler
+                      </th>
+                    </tr>
+                  </thead>
+
+                  <tbody className="divide-y divide-app-border">
+                    {filteredInvoices.map((invoice) => (
+                      <tr
+                        key={invoice.InvoiceId}
+                        className="transition hover:bg-surface-muted/60"
                       >
-                        Detayları görüntüle
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                        <td className="px-6 py-4">
+                          <Link
+                            href={`/invoices/${invoice.InvoiceId}`}
+                            className="font-semibold text-primary transition hover:text-primary-dark"
+                          >
+                            {invoice.InvoiceNumber}
+                          </Link>
+                        </td>
+
+                        <td className="px-6 py-4">
+                          <p className="text-sm font-medium text-foreground">
+                            {customerNames.get(
+                              invoice.CustomerId,
+                            ) ??
+                              `Müşteri #${invoice.CustomerId}`}
+                          </p>
+
+                          <p className="mt-0.5 text-xs text-text-muted">
+                            ID: {invoice.CustomerId}
+                          </p>
+                        </td>
+
+                        <td className="px-6 py-4 text-sm text-text-muted">
+                          {formatDate(invoice.InvoiceDate)}
+                        </td>
+
+                        <td className="px-6 py-4 text-right text-sm font-semibold text-foreground">
+                          {formatCurrency(invoice.TotalAmount)}
+                        </td>
+
+                        <td className="px-6 py-4 text-right">
+                          <Link
+                            href={`/invoices/${invoice.InvoiceId}`}
+                            className="inline-flex rounded-md border border-app-border px-3 py-2 text-sm font-semibold text-primary transition hover:border-primary hover:bg-primary-soft"
+                          >
+                            Detayları görüntüle
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
       </section>
