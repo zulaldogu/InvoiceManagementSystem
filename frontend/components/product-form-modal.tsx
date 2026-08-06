@@ -117,20 +117,27 @@ export default function ProductFormModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="product-modal-title"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/45 p-4 backdrop-blur-[2px]"
     >
-      <div className="w-full max-w-xl overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl">
-        <div className="flex items-start justify-between border-b border-slate-800 px-6 py-5">
+      <div className="my-auto w-full max-w-xl overflow-hidden rounded-xl border border-app-border bg-surface shadow-[0_24px_70px_rgba(15,23,42,0.22)]">
+        <div className="flex items-start justify-between gap-5 border-b border-app-border px-6 py-5">
           <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-primary">
+              Ürün ve hizmet yönetimi
+            </p>
+
             <h2
               id="product-modal-title"
-              className="text-xl font-semibold text-white"
+              className="mt-1 text-2xl font-semibold text-foreground"
             >
-              {isEditing ? "Ürünü Düzenle" : "Yeni Ürün Ekle"}
+              {isEditing
+                ? "Ürün veya Hizmeti Düzenle"
+                : "Yeni Ürün veya Hizmet Ekle"}
             </h2>
 
-            <p className="mt-1 text-sm text-slate-400">
-              Ürün veya hizmet bilgilerini kaydedin.
+            <p className="mt-2 text-sm text-text-muted">
+              Faturalarda kullanılacak ürün veya hizmet bilgilerini
+              kaydedin.
             </p>
           </div>
 
@@ -139,7 +146,7 @@ export default function ProductFormModal({
             onClick={onClose}
             disabled={isSubmitting}
             aria-label="Pencereyi kapat"
-            className="rounded-lg px-3 py-1.5 text-xl text-slate-400 transition hover:bg-slate-800 hover:text-white"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-xl text-text-muted transition hover:bg-surface-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
           >
             ×
           </button>
@@ -150,7 +157,7 @@ export default function ProductFormModal({
             <div>
               <label
                 htmlFor="product-code"
-                className="mb-2 block text-sm font-medium text-slate-300"
+                className="mb-2 block text-sm font-semibold text-foreground"
               >
                 Ürün kodu
               </label>
@@ -163,16 +170,21 @@ export default function ProductFormModal({
                   setProductCode(event.target.value)
                 }
                 placeholder="Örn. PRD-001"
-                className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none placeholder:text-slate-600 focus:border-cyan-400"
+                className="w-full rounded-md border border-app-border bg-surface px-4 py-3 text-foreground outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary-soft"
               />
+
+              <p className="mt-1.5 text-xs text-text-muted">
+                Aynı firma içinde benzersiz olmalıdır.
+              </p>
             </div>
 
             <div>
               <label
                 htmlFor="product-name"
-                className="mb-2 block text-sm font-medium text-slate-300"
+                className="mb-2 block text-sm font-semibold text-foreground"
               >
                 Ürün veya hizmet adı
+                <span className="ml-1 text-danger">*</span>
               </label>
 
               <input
@@ -184,7 +196,7 @@ export default function ProductFormModal({
                   setProductName(event.target.value)
                 }
                 placeholder="Ürün veya hizmet adını girin"
-                className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none placeholder:text-slate-600 focus:border-cyan-400"
+                className="w-full rounded-md border border-app-border bg-surface px-4 py-3 text-foreground outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary-soft"
               />
             </div>
 
@@ -192,30 +204,37 @@ export default function ProductFormModal({
               <div>
                 <label
                   htmlFor="unit-price"
-                  className="mb-2 block text-sm font-medium text-slate-300"
+                  className="mb-2 block text-sm font-semibold text-foreground"
                 >
                   Birim fiyat
+                  <span className="ml-1 text-danger">*</span>
                 </label>
 
-                <input
-                  id="unit-price"
-                  type="number"
-                  required
-                  min={0}
-                  step="0.01"
-                  value={unitPrice}
-                  onChange={(event) =>
-                    setUnitPrice(event.target.value)
-                  }
-                  placeholder="0,00"
-                  className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none placeholder:text-slate-600 focus:border-cyan-400"
-                />
+                <div className="relative">
+                  <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 font-semibold text-text-muted">
+                    ₺
+                  </span>
+
+                  <input
+                    id="unit-price"
+                    type="number"
+                    required
+                    min={0}
+                    step="0.01"
+                    value={unitPrice}
+                    onChange={(event) =>
+                      setUnitPrice(event.target.value)
+                    }
+                    placeholder="0,00"
+                    className="w-full rounded-md border border-app-border bg-surface px-4 py-3 pl-9 text-foreground outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary-soft"
+                  />
+                </div>
               </div>
 
               <div>
                 <label
                   htmlFor="vat-rate"
-                  className="mb-2 block text-sm font-medium text-slate-300"
+                  className="mb-2 block text-sm font-semibold text-foreground"
                 >
                   KDV oranı (%)
                 </label>
@@ -231,27 +250,31 @@ export default function ProductFormModal({
                     setVatRate(event.target.value)
                   }
                   placeholder="20"
-                  className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none placeholder:text-slate-600 focus:border-cyan-400"
+                  className="w-full rounded-md border border-app-border bg-surface px-4 py-3 text-foreground outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary-soft"
                 />
+
+                <p className="mt-1.5 text-xs text-text-muted">
+                  0 ile 100 arasında bir değer girin.
+                </p>
               </div>
             </div>
 
             {error && (
               <div
                 role="alert"
-                className="rounded-lg border border-red-800 bg-red-950/50 px-4 py-3 text-sm text-red-200"
+                className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-danger"
               >
                 {error}
               </div>
             )}
           </div>
 
-          <div className="flex justify-end gap-3 border-t border-slate-800 bg-slate-950/40 px-6 py-4">
+          <div className="flex flex-col-reverse gap-3 border-t border-app-border bg-surface-muted px-6 py-4 sm:flex-row sm:justify-end">
             <button
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="rounded-lg border border-slate-700 px-5 py-2.5 text-sm font-semibold text-slate-300 transition hover:bg-slate-800"
+              className="rounded-md border border-app-border bg-surface px-5 py-2.5 text-sm font-semibold text-text-muted transition hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
             >
               İptal
             </button>
@@ -259,7 +282,7 @@ export default function ProductFormModal({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="rounded-lg bg-cyan-400 px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isSubmitting
                 ? "Kaydediliyor..."
