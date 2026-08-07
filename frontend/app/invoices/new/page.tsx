@@ -1,35 +1,31 @@
 "use client";
 
-import type { FormEvent } from "react";
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 
 import { apiRequest } from "@/lib/api";
 import type { Customer } from "@/types/customer";
-import type {
-  Invoice,
-  InvoiceCreate,
-} from "@/types/invoice";
+import type { Invoice, InvoiceCreate } from "@/types/invoice";
 import type { Product } from "@/types/product";
 
 type DraftLine = {
-  ClientId: string;
+  ClientId: number;
   ProductId: string;
   Quantity: number;
   Price: string;
 };
 
 function getLocalDate() {
-  const now = new Date();
-  const timezoneOffset = now.getTimezoneOffset() * 60_000;
+  const date = new Date();
+  const timezoneOffset = date.getTimezoneOffset() * 60_000;
 
-  return new Date(now.getTime() - timezoneOffset)
+  return new Date(date.getTime() - timezoneOffset)
     .toISOString()
-    .slice(0, 10);
+    .split("T")[0];
 }
 
-function createDraftLine(clientId: string): DraftLine {
+function createDraftLine(clientId: number): DraftLine {
   return {
     ClientId: clientId,
     ProductId: "",
@@ -50,115 +46,128 @@ export default function NewInvoicePage() {
 
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
-
   const [customerId, setCustomerId] = useState("");
   const [invoiceNumber, setInvoiceNumber] = useState("");
-  const [invoiceDate, setInvoiceDate] = useState(getLocalDate);
-  const [lines, setLines] = useState<DraftLine[]>([
-    createDraftLine("initial-line"),
-  ]);
-
+  const [invoiceDate, setInvoiceDate] = useState(getLocalDate());
+  const [lines, setLines] = useState<DraftLine[]>([createDraftLine(1)]);
+  const [nextClientId, setNextClientId] = useState(2);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    let isActive = true;
-
-    Promise.all([
-      apiRequest<Customer[]>("/customers/"),
-      apiRequest<Product[]>("/products/"),
-    ])
-      .then(([customerData, productData]) => {
-        if (!isActive) {
-          return;
-        }
+    async function loadFormData() {
+      try {
+        const [customerData, productData] = await Promise.all([
+          apiRequest<Customer[]>("/customers/"),
+          apiRequest<Product[]>("/products/"),
+        ]);
 
         setCustomers(customerData);
         setProducts(productData);
-      })
-      .catch((error) => {
-        if (!isActive) {
-          return;
-        }
-
+      } catch (requestError) {
         setError(
-          error instanceof Error
-            ? error.message
-            : "Müşteri ve ürün bilgileri alınamadı.",
+          requestError instanceof Error
+            ? requestError.message
+            : "Fatura formu için gerekli veriler alınamadı.",
         );
-      })
-      .finally(() => {
-        if (isActive) {
-          setIsLoading(false);
-        }
-      });
+      } finally {
+        setIsLoading(false);
+      }
+    }
 
-    return () => {
-      isActive = false;
-    };
+    void loadFormData();
   }, []);
 
+  const subtotal = useMemo(
+    () =>
+      lines.reduce((total, line) => {
+        const price = Number(line.Price);
+        const quantity = Number(line.Quantity);
+
+        if (!Number.isFinite(price) || !Number.isFinite(quantity)) {
+          return total;
+        }
+
+        return total + price * quantity;
+      }, 0),
+    [lines],
+  );
+
   function updateLine(
-    clientId: string,
-    changes: Partial<DraftLine>,
+    clientId: number,
+    field: keyof Omit<DraftLine, "ClientId">,
+    value: string | number,
   ) {
     setLines((currentLines) =>
       currentLines.map((line) =>
         line.ClientId === clientId
-          ? { ...line, ...changes }
+          ? {
+              ...line,
+              [field]: value,
+            }
           : line,
       ),
     );
   }
 
-  function handleProductChange(
-    clientId: string,
-    productId: string,
-  ) {
+  function handleProductChange(clientId: number, productId: string) {
     const selectedProduct = products.find(
-      (product) => product.ProductId === Number(productId),
+      (product) => String(product.ProductId) === productId,
     );
 
-    updateLine(clientId, {
-      ProductId: productId,
-      Price: selectedProduct?.UnitPrice ?? "",
-    });
+    setLines((currentLines) =>
+      currentLines.map((line) =>
+        line.ClientId === clientId
+          ? {
+              ...line,
+              ProductId: productId,
+              Price: selectedProduct?.UnitPrice ?? "",
+            }
+          : line,
+      ),
+    );
   }
 
   function addLine() {
     setLines((currentLines) => [
       ...currentLines,
-      createDraftLine(`line-${Date.now()}`),
+      createDraftLine(nextClientId),
     ]);
+    setNextClientId((currentId) => currentId + 1);
   }
 
-  function removeLine(clientId: string) {
-    setLines((currentLines) =>
-      currentLines.filter(
-        (line) => line.ClientId !== clientId,
-      ),
+  function removeLine(clientId: number) {
+    setLines((currentLines) => {
+      if (currentLines.length === 1) {
+        return currentLines;
+      }
+
+      return currentLines.filter((line) => line.ClientId !== clientId);
+    });
+  }
+
+  function getVatRate(productId: string) {
+    const product = products.find(
+      (currentProduct) => String(currentProduct.ProductId) === productId,
     );
-  }
 
-  const subtotal = lines.reduce((total, line) => {
-    const price = Number(line.Price);
-    const quantity = Number(line.Quantity);
-
-    if (!Number.isFinite(price) || !Number.isFinite(quantity)) {
-      return total;
+    if (!product || product.VatRate === null) {
+      return "—";
     }
 
-    return total + price * quantity;
-  }, 0);
+    return `%${Number(product.VatRate).toLocaleString("tr-TR", {
+      maximumFractionDigits: 2,
+    })}`;
+  }
 
-  async function handleSubmit(
-    event: FormEvent<HTMLFormElement>,
-  ) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setError(null);
+    setError("");
 
-    if (!customerId) {
+    const parsedCustomerId = Number(customerId);
+
+    if (!Number.isInteger(parsedCustomerId) || parsedCustomerId <= 0) {
       setError("Lütfen bir müşteri seçin.");
       return;
     }
@@ -169,27 +178,36 @@ export default function NewInvoicePage() {
     }
 
     if (lines.length === 0) {
-      setError("Faturaya en az bir kalem ekleyin.");
+      setError("Faturada en az bir ürün veya hizmet bulunmalıdır.");
       return;
     }
 
-    const hasInvalidLine = lines.some(
-      (line) =>
-        !line.ProductId ||
-        line.Quantity <= 0 ||
-        line.Price === "" ||
-        Number(line.Price) < 0,
-    );
+    const invalidLine = lines.some((line) => {
+      const productId = Number(line.ProductId);
+      const quantity = Number(line.Quantity);
+      const price = Number(line.Price);
 
-    if (hasInvalidLine) {
-      setError("Lütfen bütün fatura kalemlerini kontrol edin.");
+      return (
+        !Number.isInteger(productId) ||
+        productId <= 0 ||
+        !Number.isInteger(quantity) ||
+        quantity <= 0 ||
+        !Number.isFinite(price) ||
+        price < 0
+      );
+    });
+
+    if (invalidLine) {
+      setError(
+        "Her satır için geçerli bir ürün, miktar ve birim fiyat girin.",
+      );
       return;
     }
 
-    const request: InvoiceCreate = {
-      CustomerId: Number(customerId),
+    const payload: InvoiceCreate = {
+      CustomerId: parsedCustomerId,
       InvoiceNumber: invoiceNumber.trim(),
-      InvoiceDate: `${invoiceDate}T00:00:00`,
+      InvoiceDate: invoiceDate,
       Lines: lines.map((line) => ({
         ProductId: Number(line.ProductId),
         Quantity: Number(line.Quantity),
@@ -197,27 +215,20 @@ export default function NewInvoicePage() {
       })),
     };
 
-    setIsSubmitting(true);
-
     try {
-      const createdInvoice = await apiRequest<Invoice>(
-        "/invoices/",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(request),
-        },
-      );
+      setIsSubmitting(true);
+
+      const createdInvoice = await apiRequest<Invoice>("/invoices/", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
 
       router.push(`/invoices/${createdInvoice.InvoiceId}`);
-      router.refresh();
-    } catch (error) {
+    } catch (requestError) {
       setError(
-        error instanceof Error
-          ? error.message
-          : "Fatura kaydedilirken beklenmeyen bir hata oluştu.",
+        requestError instanceof Error
+          ? requestError.message
+          : "Fatura oluşturulamadı.",
       );
     } finally {
       setIsSubmitting(false);
@@ -225,277 +236,324 @@ export default function NewInvoicePage() {
   }
 
   return (
-    <main className="min-h-[calc(100vh-5rem)] bg-slate-950 px-6 py-8 text-slate-100 lg:px-10">
-      <section className="mx-auto max-w-7xl">
-        <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <Link
-              href="/invoices"
-              className="mb-4 inline-flex text-sm font-medium text-cyan-300 transition hover:text-cyan-200"
-            >
-              ← Faturalara dön
-            </Link>
-
-            <h2 className="text-3xl font-semibold">
-              Yeni Fatura Oluştur
-            </h2>
-
-            <p className="mt-2 text-sm text-slate-400">
-              Müşteri ve fatura kalemlerini seçerek yeni bir
-              fatura kaydı oluşturun.
-            </p>
-          </div>
-
-          <div className="rounded-lg border border-slate-800 bg-slate-900 px-5 py-3 text-right">
-            <p className="text-xs uppercase tracking-wider text-slate-500">
-              Vergi hariç toplam
-            </p>
-            <p className="mt-1 text-2xl font-semibold text-cyan-300">
-              {formatCurrency(subtotal)}
-            </p>
-          </div>
-        </div>
-
-        {error && (
-          <div
-            role="alert"
-            className="mb-6 rounded-lg border border-red-800 bg-red-950/50 px-4 py-3 text-sm text-red-200"
+      <main className="min-h-full bg-background px-5 py-8 sm:px-8 lg:px-10">
+        <div className="mx-auto max-w-[1490px]">
+          <Link
+            className="inline-flex items-center gap-2 text-sm font-semibold text-primary transition hover:text-primary/75"
+            href="/invoices"
           >
-            {error}
+            <span aria-hidden="true">←</span>
+            Faturalara dön
+          </Link>
+
+          <div className="mt-5 flex flex-col gap-4 border-b border-app-border pb-6 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
+                Fatura yönetimi
+              </p>
+
+              <h1 className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+                Yeni Fatura Oluştur
+              </h1>
+
+              <p className="mt-2 text-base text-text-muted">
+                Müşteri ve fatura bilgilerini girerek ürün veya hizmetleri
+                faturaya ekleyin.
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-app-border bg-surface px-5 py-3 text-right shadow-sm">
+              <p className="text-xs font-bold uppercase tracking-[0.12em] text-text-muted">
+                Vergi hariç toplam
+              </p>
+              <p className="mt-1 text-2xl font-bold text-foreground">
+                {formatCurrency(subtotal)}
+              </p>
+            </div>
           </div>
-        )}
 
-        {isLoading ? (
-          <div className="rounded-xl border border-slate-800 bg-slate-900 p-8 text-slate-400">
-            Müşteri ve ürün bilgileri yükleniyor...
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <section className="rounded-xl border border-slate-800 bg-slate-900 p-6">
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold">
-                  Fatura Bilgileri
-                </h3>
-                <p className="mt-1 text-sm text-slate-400">
-                  Faturanın müşteri, numara ve tarih bilgileri.
-                </p>
-              </div>
-
-              <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-                <div>
-                  <label
-                    htmlFor="customer"
-                    className="mb-2 block text-sm font-medium text-slate-300"
-                  >
-                    Müşteri
-                  </label>
-
-                  <select
-                    id="customer"
-                    required
-                    value={customerId}
-                    onChange={(event) =>
-                      setCustomerId(event.target.value)
-                    }
-                    className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 outline-none focus:border-cyan-400"
-                  >
-                    <option value="">Müşteri seçin</option>
-
-                    {customers.map((customer) => (
-                      <option
-                        key={customer.CustomerId}
-                        value={customer.CustomerId}
-                      >
-                        {customer.Title} –{" "}
-                        {customer.TaxNumber ?? "Vergi no yok"}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="invoice-number"
-                    className="mb-2 block text-sm font-medium text-slate-300"
-                  >
-                    Fatura numarası
-                  </label>
-
-                  <input
-                    id="invoice-number"
-                    type="text"
-                    required
-                    maxLength={20}
-                    value={invoiceNumber}
-                    onChange={(event) =>
-                      setInvoiceNumber(event.target.value)
-                    }
-                    placeholder="Örn. INV-2026-003"
-                    className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 outline-none placeholder:text-slate-600 focus:border-cyan-400"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="invoice-date"
-                    className="mb-2 block text-sm font-medium text-slate-300"
-                  >
-                    Fatura tarihi
-                  </label>
-
-                  <input
-                    id="invoice-date"
-                    type="date"
-                    required
-                    value={invoiceDate}
-                    onChange={(event) =>
-                      setInvoiceDate(event.target.value)
-                    }
-                    className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 outline-none focus:border-cyan-400"
-                  />
-                </div>
-              </div>
+          {isLoading ? (
+            <section className="mt-8 rounded-xl border border-app-border bg-surface p-8 text-text-muted shadow-sm">
+              Fatura formu hazırlanıyor...
             </section>
+          ) : (
+            <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+              {error ? (
+                <div
+                  className="rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-sm font-medium text-red-700"
+                  role="alert"
+                >
+                  {error}
+                </div>
+              ) : null}
 
-            <section className="rounded-xl border border-slate-800 bg-slate-900">
-              <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 p-6">
-                <div>
-                  <h3 className="text-lg font-semibold">
-                    Fatura Kalemleri
-                  </h3>
-                  <p className="mt-1 text-sm text-slate-400">
-                    Faturada yer alacak ürün veya hizmetler.
+              <section className="overflow-hidden rounded-xl border border-app-border bg-surface shadow-sm">
+                <div className="border-b border-app-border px-6 py-5">
+                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">
+                    Temel bilgiler
+                  </p>
+                  <h2 className="mt-1 text-xl font-bold text-foreground">
+                    Fatura Bilgileri
+                  </h2>
+                  <p className="mt-1 text-sm text-text-muted">
+                    Faturanın müşterisini, numarasını ve düzenlenme tarihini
+                    belirleyin.
                   </p>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={addLine}
-                  className="rounded-lg bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
+                <div className="grid gap-5 p-6 md:grid-cols-2 xl:grid-cols-3">
+                  <label className="grid gap-2 text-sm font-semibold text-foreground">
+                    Müşteri
+                    <select
+                      className="h-12 rounded-lg border border-app-border bg-white px-4 text-base font-normal text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
+                      onChange={(event) => setCustomerId(event.target.value)}
+                      required
+                      value={customerId}
+                    >
+                      <option value="">Müşteri seçin</option>
+                      {customers.map((customer) => (
+                        <option key={customer.CustomerId} value={customer.CustomerId}>
+                          {customer.Title}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="grid gap-2 text-sm font-semibold text-foreground">
+                    Fatura numarası
+                    <input
+                      className="h-12 rounded-lg border border-app-border bg-white px-4 text-base font-normal text-foreground outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/15"
+                      maxLength={20}
+                      onChange={(event) =>
+                        setInvoiceNumber(event.target.value)
+                      }
+                      placeholder="Örn. INV-2026-001"
+                      required
+                      type="text"
+                      value={invoiceNumber}
+                    />
+                  </label>
+
+                  <label className="grid gap-2 text-sm font-semibold text-foreground">
+                    Fatura tarihi
+                    <input
+                      className="h-12 rounded-lg border border-app-border bg-white px-4 text-base font-normal text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
+                      onChange={(event) => setInvoiceDate(event.target.value)}
+                      type="date"
+                      value={invoiceDate}
+                    />
+                  </label>
+                </div>
+              </section>
+
+              <section className="overflow-hidden rounded-xl border border-app-border bg-surface shadow-sm">
+                <div className="flex flex-col gap-4 border-b border-app-border px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">
+                      Fatura kalemleri
+                    </p>
+                    <h2 className="mt-1 text-xl font-bold text-foreground">
+                      Ürün ve Hizmetler
+                    </h2>
+                    <p className="mt-1 text-sm text-text-muted">
+                      Faturaya dahil edilecek kayıtları ve miktarlarını
+                      belirleyin.
+                    </p>
+                  </div>
+
+                  <button
+                    className="inline-flex h-11 items-center justify-center rounded-lg border border-primary px-5 text-sm font-bold text-primary transition hover:bg-primary/5"
+                    onClick={addLine}
+                    type="button"
+                  >
+                    + Yeni Satır Ekle
+                  </button>
+                </div>
+
+                {products.length === 0 ? (
+                  <div className="m-6 rounded-lg border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">
+                    Faturaya eklenebilecek ürün veya hizmet bulunamadı. Önce
+                    ürün yönetimi sayfasından bir kayıt oluşturun.
+                  </div>
+                ) : null}
+
+                <div className="overflow-x-auto">
+                  <table className="min-w-[1050px] w-full border-collapse text-left">
+                    <thead className="bg-primary-soft">
+                      <tr className="text-xs font-bold uppercase tracking-[0.1em] text-text-muted">
+                        <th className="px-6 py-4">No</th>
+                        <th className="px-4 py-4">Ürün / Hizmet</th>
+                        <th className="px-4 py-4">Miktar</th>
+                        <th className="px-4 py-4">Birim Fiyat</th>
+                        <th className="px-4 py-4 text-center">KDV</th>
+                        <th className="px-4 py-4 text-right">Tutar</th>
+                        <th className="px-6 py-4 text-right">İşlem</th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {lines.map((line, index) => {
+                        const lineTotal =
+                          Number(line.Price || 0) *
+                          Number(line.Quantity || 0);
+
+                        return (
+                          <tr
+                            className="border-t border-app-border align-middle"
+                            key={line.ClientId}
+                          >
+                            <td className="px-6 py-5 text-sm font-bold text-text-muted">
+                              {index + 1}
+                            </td>
+
+                            <td className="min-w-[310px] px-4 py-5">
+                              <select
+                                className="h-11 w-full rounded-lg border border-app-border bg-white px-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
+                                onChange={(event) =>
+                                  handleProductChange(
+                                    line.ClientId,
+                                    event.target.value,
+                                  )
+                                }
+                                required
+                                value={line.ProductId}
+                              >
+                                <option value="">Ürün veya hizmet seçin</option>
+                                {products.map((product) => (
+                                  <option key={product.ProductId} value={product.ProductId}>
+                                    {product.ProductCode
+                                      ? `${product.ProductCode} — `
+                                      : ""}
+                                    {product.ProductName}
+                                  </option>
+                                ))}
+                              </select>
+                            </td>
+
+                            <td className="w-32 px-4 py-5">
+                              <input
+                                className="h-11 w-full rounded-lg border border-app-border bg-white px-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
+                                min={1}
+                                onChange={(event) =>
+                                  updateLine(
+                                    line.ClientId,
+                                    "Quantity",
+                                    Number(event.target.value),
+                                  )
+                                }
+                                required
+                                step={1}
+                                type="number"
+                                value={line.Quantity}
+                              />
+                            </td>
+
+                            <td className="w-44 px-4 py-5">
+                              <input
+                                className="h-11 w-full rounded-lg border border-app-border bg-white px-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
+                                min={0}
+                                onChange={(event) =>
+                                  updateLine(
+                                    line.ClientId,
+                                    "Price",
+                                    event.target.value,
+                                  )
+                                }
+                                required
+                                step="0.01"
+                                type="number"
+                                value={line.Price}
+                              />
+                            </td>
+
+                            <td className="px-4 py-5 text-center">
+                              <span className="inline-flex rounded-full bg-primary-soft px-3 py-1 text-sm font-bold text-primary">
+                                {getVatRate(line.ProductId)}
+                              </span>
+                            </td>
+
+                            <td className="px-4 py-5 text-right font-bold text-foreground">
+                              {formatCurrency(
+                                Number.isFinite(lineTotal) ? lineTotal : 0,
+                              )}
+                            </td>
+
+                            <td className="px-6 py-5 text-right">
+                              <button
+                                className="rounded-lg border border-red-200 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
+                                disabled={lines.length === 1}
+                                onClick={() => removeLine(line.ClientId)}
+                                type="button"
+                              >
+                                Kaldır
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+
+              <section className="grid gap-6 lg:grid-cols-[1fr_390px]">
+                <div className="rounded-xl border border-blue-200 bg-blue-50 px-6 py-5">
+                  <h2 className="font-bold text-blue-950">
+                    Fatura toplamı hakkında
+                  </h2>
+                  <p className="mt-2 text-sm leading-6 text-blue-800">
+                    Ürünlerin KDV oranları bilgi amacıyla gösterilmektedir.
+                    Mevcut sistemde fatura toplamı, satırların vergi hariç
+                    tutarları üzerinden hesaplanır.
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-app-border bg-surface p-6 shadow-sm">
+                  <div className="flex items-center justify-between border-b border-app-border pb-4">
+                    <span className="text-sm font-semibold text-text-muted">
+                      Fatura satırı
+                    </span>
+                    <span className="font-bold text-foreground">
+                      {lines.length}
+                    </span>
+                  </div>
+
+                  <div className="flex items-end justify-between pt-5">
+                    <div>
+                      <p className="text-sm font-semibold text-text-muted">
+                        Vergi hariç toplam
+                      </p>
+                      <p className="mt-1 text-3xl font-bold tracking-tight text-foreground">
+                        {formatCurrency(subtotal)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <div className="flex flex-col-reverse gap-3 border-t border-app-border pt-6 sm:flex-row sm:justify-end">
+                <Link
+                  className="inline-flex h-12 items-center justify-center rounded-lg border border-app-border bg-white px-6 font-semibold text-text-muted transition hover:bg-slate-50"
+                  href="/invoices"
                 >
-                  + Yeni satır ekle
+                  İptal
+                </Link>
+
+                <button
+                  className="inline-flex h-12 items-center justify-center rounded-lg bg-primary px-7 font-bold text-white shadow-sm transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={
+                    isSubmitting ||
+                    customers.length === 0 ||
+                    products.length === 0
+                  }
+                  type="submit"
+                >
+                  {isSubmitting ? "Fatura kaydediliyor..." : "Faturayı Kaydet"}
                 </button>
               </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[850px] text-left">
-                  <thead className="bg-slate-950/50 text-xs uppercase tracking-wider text-slate-500">
-                    <tr>
-                      <th className="px-6 py-4">Ürün / Hizmet</th>
-                      <th className="px-6 py-4">Miktar</th>
-                      <th className="px-6 py-4">Birim fiyat</th>
-                      <th className="px-6 py-4">Tutar</th>
-                      <th className="px-6 py-4 text-right">İşlem</th>
-                    </tr>
-                  </thead>
-
-                  <tbody className="divide-y divide-slate-800">
-                    {lines.map((line) => (
-                      <tr key={line.ClientId}>
-                        <td className="px-6 py-4">
-                          <select
-                            required
-                            value={line.ProductId}
-                            onChange={(event) =>
-                              handleProductChange(
-                                line.ClientId,
-                                event.target.value,
-                              )
-                            }
-                            className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 outline-none focus:border-cyan-400"
-                          >
-                            <option value="">Ürün seçin</option>
-
-                            {products.map((product) => (
-                              <option
-                                key={product.ProductId}
-                                value={product.ProductId}
-                              >
-                                {product.ProductCode} –{" "}
-                                {product.ProductName}
-                              </option>
-                            ))}
-                          </select>
-                        </td>
-
-                        <td className="px-6 py-4">
-                          <input
-                            type="number"
-                            required
-                            min={1}
-                            value={line.Quantity}
-                            onChange={(event) =>
-                              updateLine(line.ClientId, {
-                                Quantity: Number(event.target.value),
-                              })
-                            }
-                            className="w-24 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 outline-none focus:border-cyan-400"
-                          />
-                        </td>
-
-                        <td className="px-6 py-4">
-                          <input
-                            type="number"
-                            required
-                            min={0}
-                            step="0.01"
-                            value={line.Price}
-                            onChange={(event) =>
-                              updateLine(line.ClientId, {
-                                Price: event.target.value,
-                              })
-                            }
-                            className="w-36 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 outline-none focus:border-cyan-400"
-                          />
-                        </td>
-
-                        <td className="px-6 py-4 font-semibold text-cyan-300">
-                          {formatCurrency(
-                            Number(line.Price || 0) *
-                              Number(line.Quantity || 0),
-                          )}
-                        </td>
-
-                        <td className="px-6 py-4 text-right">
-                          <button
-                            type="button"
-                            disabled={lines.length === 1}
-                            onClick={() =>
-                              removeLine(line.ClientId)
-                            }
-                            className="rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 transition hover:border-red-500 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-40"
-                          >
-                            Sil
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-
-            <div className="flex flex-wrap justify-end gap-3">
-              <Link
-                href="/invoices"
-                className="rounded-lg border border-slate-700 px-5 py-3 text-sm font-semibold text-slate-300 transition hover:bg-slate-900"
-              >
-                İptal
-              </Link>
-
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="rounded-lg bg-cyan-400 px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {isSubmitting
-                  ? "Fatura kaydediliyor..."
-                  : "Faturayı kaydet"}
-              </button>
-            </div>
-          </form>
-        )}
-      </section>
-    </main>
+            </form>
+          )}
+        </div>
+      </main>
   );
 }
