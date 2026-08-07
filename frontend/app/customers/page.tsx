@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
+import Link from "next/link";
 import CustomerFormModal from "@/components/customer-form-modal";
 import { apiRequest } from "@/lib/api";
 import type { Customer } from "@/types/customer";
@@ -355,13 +355,17 @@ export default function CustomersPage() {
 
                         <td className="px-6 py-4">
                           <div className="flex justify-end gap-2">
+                            <Link
+  href={`/customers/${customer.CustomerId}`}
+className="inline-flex h-10 min-w-20 items-center justify-center rounded-md border border-app-border px-3 text-sm font-semibold text-primary transition hover:border-primary hover:bg-primary-soft">
+  Detay
+</Link>
                             <button
                               type="button"
                               onClick={() =>
                                 openEditForm(customer)
                               }
-                              className="rounded-md border border-app-border px-3 py-2 text-sm font-semibold text-primary transition hover:border-primary hover:bg-primary-soft"
-                            >
+className="inline-flex h-10 min-w-20 items-center justify-center rounded-md border border-app-border px-3 text-sm font-semibold text-primary transition hover:border-primary hover:bg-primary-soft"                            >
                               Düzenle
                             </button>
 
@@ -374,8 +378,7 @@ export default function CustomersPage() {
                               onClick={() =>
                                 handleDelete(customer)
                               }
-                              className="rounded-md border border-app-border px-3 py-2 text-sm font-semibold text-danger transition hover:border-danger hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-                            >
+className="inline-flex h-10 min-w-20 items-center justify-center rounded-md border border-app-border px-3 text-sm font-semibold text-danger transition hover:border-danger hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"                            >
                               {deletingCustomerId ===
                               customer.CustomerId
                                 ? "Siliniyor..."
