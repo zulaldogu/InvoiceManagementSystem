@@ -55,7 +55,12 @@ export default function InvoicesPage() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const [isLoading, setIsLoading] = useState(true);
+  const [deletingInvoiceId, setDeletingInvoiceId] =
+    useState<number | null>(null);
+
   const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
     let isActive = true;
@@ -73,14 +78,14 @@ export default function InvoicesPage() {
 
         setInvoices(invoiceData);
         setCustomers(customerData);
-      } catch (error) {
+      } catch (requestError) {
         if (!isActive) {
           return;
         }
 
         setError(
-          error instanceof Error
-            ? error.message
+          requestError instanceof Error
+            ? requestError.message
             : "Faturalar alınırken beklenmeyen bir hata oluştu.",
         );
       } finally {
@@ -90,12 +95,54 @@ export default function InvoicesPage() {
       }
     }
 
-    loadInvoicePage();
+    void loadInvoicePage();
 
     return () => {
       isActive = false;
     };
   }, []);
+
+  async function handleDelete(invoice: Invoice) {
+    const confirmed = window.confirm(
+      `"${invoice.InvoiceNumber}" numaralı faturayı silmek istediğinizden emin misiniz?\n\nFaturaya bağlı bütün ürün ve hizmet satırları da silinecektir.`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingInvoiceId(invoice.InvoiceId);
+    setActionError(null);
+    setNotice(null);
+
+    try {
+      await apiRequest<{ message: string }>(
+        `/invoices/${invoice.InvoiceId}`,
+        {
+          method: "DELETE",
+        },
+      );
+
+      setInvoices((currentInvoices) =>
+        currentInvoices.filter(
+          (currentInvoice) =>
+            currentInvoice.InvoiceId !== invoice.InvoiceId,
+        ),
+      );
+
+      setNotice(
+        `"${invoice.InvoiceNumber}" numaralı fatura başarıyla silindi.`,
+      );
+    } catch (requestError) {
+      setActionError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Fatura silinirken beklenmeyen bir hata oluştu.",
+      );
+    } finally {
+      setDeletingInvoiceId(null);
+    }
+  }
 
   const customerNames = new Map(
     customers.map((customer) => [
@@ -181,7 +228,22 @@ export default function InvoicesPage() {
           </div>
         </div>
 
-        {error && (
+        {notice ? (
+          <div className="mb-6 rounded-lg border border-green-200 bg-green-50 px-5 py-4 text-sm font-medium text-success">
+            {notice}
+          </div>
+        ) : null}
+
+        {actionError ? (
+          <div
+            className="mb-6 rounded-lg border border-red-200 bg-red-50 px-5 py-4 text-sm font-medium text-danger"
+            role="alert"
+          >
+            {actionError}
+          </div>
+        ) : null}
+
+        {error ? (
           <div
             role="alert"
             className="mb-6 rounded-lg border border-red-200 bg-red-50 px-5 py-4 text-sm text-danger"
@@ -192,7 +254,7 @@ export default function InvoicesPage() {
 
             <p className="mt-1">{error}</p>
           </div>
-        )}
+        ) : null}
 
         {isLoading ? (
           <div className="rounded-lg border border-app-border bg-surface p-8 text-sm text-text-muted">
@@ -208,7 +270,7 @@ export default function InvoicesPage() {
                 fatura gösteriliyor
               </p>
 
-              {searchQuery && (
+              {searchQuery ? (
                 <button
                   type="button"
                   onClick={() => setSearchQuery("")}
@@ -216,7 +278,7 @@ export default function InvoicesPage() {
                 >
                   Aramayı temizle
                 </button>
-              )}
+              ) : null}
             </div>
 
             {filteredInvoices.length === 0 ? (
@@ -233,18 +295,18 @@ export default function InvoicesPage() {
                     : "İlk faturanızı oluşturarak başlayabilirsiniz."}
                 </p>
 
-                {!searchQuery && (
+                {!searchQuery ? (
                   <Link
                     href="/invoices/new"
                     className="mt-5 inline-flex rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-dark"
                   >
                     İlk faturayı oluştur
                   </Link>
-                )}
+                ) : null}
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[850px] text-left">
+                <table className="w-full min-w-[1000px] text-left">
                   <thead className="bg-surface-muted text-xs uppercase tracking-[0.08em] text-text-muted">
                     <tr>
                       <th className="px-6 py-4 font-semibold">
@@ -305,13 +367,32 @@ export default function InvoicesPage() {
                           {formatCurrency(invoice.TotalAmount)}
                         </td>
 
-                        <td className="px-6 py-4 text-right">
-                          <Link
-                            href={`/invoices/${invoice.InvoiceId}`}
-                            className="inline-flex rounded-md border border-app-border px-3 py-2 text-sm font-semibold text-primary transition hover:border-primary hover:bg-primary-soft"
-                          >
-                            Detayları görüntüle
-                          </Link>
+                        <td className="px-6 py-4">
+                          <div className="flex justify-end gap-2">
+                            <Link
+                              href={`/invoices/${invoice.InvoiceId}`}
+                              className="inline-flex h-10 min-w-20 items-center justify-center rounded-md border border-app-border px-3 text-sm font-semibold text-primary transition hover:border-primary hover:bg-primary-soft"
+                            >
+                              Detay
+                            </Link>
+
+                            <button
+                              type="button"
+                              disabled={
+                                deletingInvoiceId ===
+                                invoice.InvoiceId
+                              }
+                              onClick={() =>
+                                handleDelete(invoice)
+                              }
+                              className="inline-flex h-10 min-w-20 items-center justify-center rounded-md border border-app-border px-3 text-sm font-semibold text-danger transition hover:border-danger hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              {deletingInvoiceId ===
+                              invoice.InvoiceId
+                                ? "Siliniyor..."
+                                : "Sil"}
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
