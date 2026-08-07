@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import ProductFormModal from "@/components/product-form-modal";
@@ -358,32 +359,32 @@ export default function ProductsPage() {
 
                         <td className="px-6 py-4">
                           <div className="flex justify-end gap-2">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                openEditForm(product)
-                              }
-                              className="rounded-md border border-app-border px-3 py-2 text-sm font-semibold text-primary transition hover:border-primary hover:bg-primary-soft"
-                            >
-                              Düzenle
-                            </button>
+  <Link
+    href={`/products/${product.ProductId}`}
+    className="inline-flex h-10 min-w-20 items-center justify-center rounded-md border border-app-border px-3 text-sm font-semibold text-primary transition hover:border-primary hover:bg-primary-soft"
+  >
+    Detay
+  </Link>
 
-                            <button
-                              type="button"
-                              disabled={
-                                deletingProductId ===
-                                product.ProductId
-                              }
-                              onClick={() =>
-                                handleDelete(product)
-                              }
-                              className="rounded-md border border-app-border px-3 py-2 text-sm font-semibold text-danger transition hover:border-danger hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                              {deletingProductId === product.ProductId
-                                ? "Siliniyor..."
-                                : "Sil"}
-                            </button>
-                          </div>
+  <button
+    type="button"
+    onClick={() => openEditForm(product)}
+    className="inline-flex h-10 min-w-20 items-center justify-center rounded-md border border-app-border px-3 text-sm font-semibold text-primary transition hover:border-primary hover:bg-primary-soft"
+  >
+    Düzenle
+  </button>
+
+  <button
+    type="button"
+    disabled={deletingProductId === product.ProductId}
+    onClick={() => handleDelete(product)}
+    className="inline-flex h-10 min-w-20 items-center justify-center rounded-md border border-app-border px-3 text-sm font-semibold text-danger transition hover:border-danger hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+  >
+    {deletingProductId === product.ProductId
+      ? "Siliniyor..."
+      : "Sil"}
+  </button>
+</div>
                         </td>
                       </tr>
                     ))}
