@@ -5,6 +5,12 @@ export const API_BASE_URL =
 
 const ACCESS_TOKEN_KEY = "invoice_access_token";
 
+type ValidationErrorItem = {
+  loc?: Array<string | number>;
+  msg?: string;
+  type?: string;
+};
+
 export function getAccessToken(): string | null {
   if (typeof window === "undefined") {
     return null;
@@ -21,14 +27,61 @@ export function clearAccessToken(): void {
   sessionStorage.removeItem(ACCESS_TOKEN_KEY);
 }
 
+function formatErrorDetail(detail: unknown): string | null {
+  if (typeof detail === "string") {
+    return detail;
+  }
+
+  if (Array.isArray(detail)) {
+    const messages = detail
+      .map((item: unknown) => {
+        if (
+          typeof item === "object" &&
+          item !== null &&
+          "msg" in item
+        ) {
+          const validationItem = item as ValidationErrorItem;
+          const field = validationItem.loc
+            ?.filter((part) => part !== "body")
+            .join(".");
+
+          if (field && validationItem.msg) {
+            return `${field}: ${validationItem.msg}`;
+          }
+
+          return validationItem.msg ?? null;
+        }
+
+        return null;
+      })
+      .filter((message): message is string => Boolean(message));
+
+    if (messages.length > 0) {
+      return messages.join(" ");
+    }
+  }
+
+  if (typeof detail === "object" && detail !== null) {
+    try {
+      return JSON.stringify(detail);
+    } catch {
+      return null;
+    }
+  }
+
+  return null;
+}
+
 async function getErrorMessage(response: Response): Promise<string> {
   try {
     const body = (await response.json()) as {
-      detail?: string;
+      detail?: unknown;
     };
 
-    if (body.detail) {
-      return body.detail;
+    const detailMessage = formatErrorDetail(body.detail);
+
+    if (detailMessage) {
+      return detailMessage;
     }
   } catch {
     // Yanıt JSON değilse genel hata mesajı kullanılacak.
@@ -72,6 +125,13 @@ export async function apiRequest<T>(
   const accessToken = getAccessToken();
 
   headers.set("Accept", "application/json");
+
+  if (
+    typeof options.body === "string" &&
+    !headers.has("Content-Type")
+  ) {
+    headers.set("Content-Type", "application/json");
+  }
 
   if (accessToken) {
     headers.set("Authorization", `Bearer ${accessToken}`);

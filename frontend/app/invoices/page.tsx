@@ -375,6 +375,12 @@ export default function InvoicesPage() {
                             >
                               Detay
                             </Link>
+                            <Link
+  href={`/invoices/${invoice.InvoiceId}/edit`}
+  className="inline-flex h-10 min-w-20 items-center justify-center rounded-md border border-app-border px-3 text-sm font-semibold text-primary transition hover:border-primary hover:bg-primary-soft"
+>
+  Düzenle
+</Link>
 
                             <button
                               type="button"
