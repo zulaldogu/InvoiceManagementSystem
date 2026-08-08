@@ -5,6 +5,12 @@ export type InvoiceLine = {
   ItemName: string | null;
   Quantity: number;
   Price: string;
+  VatRate: string;
+  ExciseTaxRate: string;
+  Subtotal: string;
+  VatAmount: string;
+  ExciseTaxAmount: string;
+  LineTotal: string;
   CompanyId: number | null;
   UserId: number | null;
   RecordDate: string | null;
@@ -15,7 +21,10 @@ export type Invoice = {
   CustomerId: number;
   InvoiceNumber: string;
   InvoiceDate: string | null;
-  TotalAmount: string | null;
+  Subtotal: string;
+  VatTotal: string;
+  ExciseTaxTotal: string;
+  TotalAmount: string;
   CompanyId: number | null;
   UserId: number | null;
   RecordDate: string | null;
@@ -25,7 +34,9 @@ export type Invoice = {
 export type InvoiceLineCreate = {
   ProductId: number;
   Quantity: number;
-  Price: number;
+  Price?: number;
+  VatRate?: number;
+  ExciseTaxRate?: number;
 };
 
 export type InvoiceCreate = {
@@ -33,4 +44,18 @@ export type InvoiceCreate = {
   InvoiceNumber: string;
   InvoiceDate: string;
   Lines: InvoiceLineCreate[];
+};
+
+export type InvoiceUpdate = {
+  CustomerId?: number;
+  InvoiceNumber?: string;
+  InvoiceDate?: string;
+};
+
+export type InvoiceLineUpdate = {
+  ProductId?: number;
+  Quantity?: number;
+  Price?: number;
+  VatRate?: number;
+  ExciseTaxRate?: number;
 };

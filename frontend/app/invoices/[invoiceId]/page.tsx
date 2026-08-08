@@ -17,13 +17,22 @@ function formatCurrency(value: number | string | null) {
   }).format(Number.isFinite(numericValue) ? numericValue : 0);
 }
 
+function formatRate(value: string) {
+  const numericValue = Number(value);
+
+  return `%${Number.isFinite(numericValue)
+    ? numericValue.toLocaleString("tr-TR", {
+        maximumFractionDigits: 2,
+      })
+    : "0"}`;
+}
+
 function formatDate(value: string | null) {
   if (!value) {
     return "Tarih belirtilmemiş";
   }
 
-  const datePart = value.slice(0, 10);
-  const [year, month, day] = datePart.split("-");
+  const [year, month, day] = value.slice(0, 10).split("-");
 
   if (year && month && day) {
     return `${day}.${month}.${year}`;
@@ -95,7 +104,7 @@ export default function InvoiceDetailPage() {
 
   return (
     <main className="min-h-full bg-background px-5 py-8 sm:px-8 lg:px-10">
-      <div className="mx-auto max-w-[1490px]">
+      <div className="mx-auto max-w-[1550px]">
         <Link
           className="inline-flex items-center gap-2 text-sm font-semibold text-primary transition hover:text-primary-dark"
           href="/invoices"
@@ -138,17 +147,26 @@ export default function InvoiceDetailPage() {
                 </h1>
 
                 <p className="mt-2 text-base text-text-muted">
-                  Fatura üst bilgilerini ve ilgili ürün veya hizmet kalemlerini
-                  inceleyin.
+                  Fatura, vergi ve ürün veya hizmet kalemi
+                  bilgilerini inceleyin.
                 </p>
               </div>
 
-              <Link
-                className="inline-flex h-12 items-center justify-center rounded-lg bg-primary px-6 font-bold text-white shadow-sm transition hover:bg-primary-dark"
-                href="/invoices/new"
-              >
-                + Yeni Fatura Oluştur
-              </Link>
+              <div className="flex flex-wrap gap-3">
+                <Link
+                  className="inline-flex h-12 items-center justify-center rounded-lg border border-primary bg-white px-6 font-bold text-primary transition hover:bg-primary/5"
+                  href={`/invoices/${invoice.InvoiceId}/edit`}
+                >
+                  Faturayı Düzenle
+                </Link>
+
+                <Link
+                  className="inline-flex h-12 items-center justify-center rounded-lg bg-primary px-6 font-bold text-white shadow-sm transition hover:bg-primary-dark"
+                  href="/invoices/new"
+                >
+                  + Yeni Fatura Oluştur
+                </Link>
+              </div>
             </header>
 
             <section className="mt-7 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
@@ -157,7 +175,8 @@ export default function InvoiceDetailPage() {
                   Müşteri
                 </p>
                 <p className="mt-3 text-lg font-bold text-foreground">
-                  {customer?.Title ?? `Müşteri #${invoice.CustomerId}`}
+                  {customer?.Title ??
+                    `Müşteri #${invoice.CustomerId}`}
                 </p>
                 <p className="mt-1 text-sm text-text-muted">
                   Müşteri ID: {invoice.CustomerId}
@@ -190,13 +209,54 @@ export default function InvoiceDetailPage() {
 
               <article className="rounded-lg border border-primary bg-primary p-5 text-white shadow-sm">
                 <p className="text-xs font-bold uppercase tracking-[0.12em] text-blue-100">
-                  Vergi hariç toplam
+                  Ödenecek toplam
                 </p>
                 <p className="mt-3 text-2xl font-bold">
                   {formatCurrency(invoice.TotalAmount)}
                 </p>
                 <p className="mt-1 text-sm text-blue-100">
-                  Fatura satırları toplamı
+                  Vergiler dahil fatura toplamı
+                </p>
+              </article>
+            </section>
+
+            <section className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+              <article className="rounded-lg border border-app-border bg-surface p-5 shadow-sm">
+                <p className="text-xs font-bold uppercase tracking-[0.12em] text-text-muted">
+                  Vergi hariç toplam
+                </p>
+                <p className="mt-3 text-xl font-bold text-foreground">
+                  {formatCurrency(invoice.Subtotal)}
+                </p>
+              </article>
+
+              <article className="rounded-lg border border-app-border bg-surface p-5 shadow-sm">
+                <p className="text-xs font-bold uppercase tracking-[0.12em] text-text-muted">
+                  Toplam ÖTV
+                </p>
+                <p className="mt-3 text-xl font-bold text-foreground">
+                  {formatCurrency(invoice.ExciseTaxTotal)}
+                </p>
+              </article>
+
+              <article className="rounded-lg border border-app-border bg-surface p-5 shadow-sm">
+                <p className="text-xs font-bold uppercase tracking-[0.12em] text-text-muted">
+                  Toplam KDV
+                </p>
+                <p className="mt-3 text-xl font-bold text-foreground">
+                  {formatCurrency(invoice.VatTotal)}
+                </p>
+              </article>
+
+              <article className="rounded-lg border border-primary/30 bg-primary-soft p-5">
+                <p className="text-xs font-bold uppercase tracking-[0.12em] text-primary">
+                  Vergi toplamı
+                </p>
+                <p className="mt-3 text-xl font-bold text-primary">
+                  {formatCurrency(
+                    Number(invoice.VatTotal) +
+                      Number(invoice.ExciseTaxTotal),
+                  )}
                 </p>
               </article>
             </section>
@@ -298,89 +358,150 @@ export default function InvoiceDetailPage() {
                   Fatura içeriği
                 </p>
                 <h2 className="mt-1 text-xl font-bold text-foreground">
-                  Ürün ve Hizmetler
+                  Ürün, Hizmet ve Vergiler
                 </h2>
                 <p className="mt-1 text-sm text-text-muted">
-                  Faturaya eklenmiş ürün ve hizmet kalemleri.
+                  Faturaya eklenmiş kalemlerin tutar ve vergi
+                  bilgileri.
                 </p>
               </div>
 
               {invoice.Lines.length === 0 ? (
                 <div className="p-8 text-sm text-text-muted">
-                  Bu faturaya ait ürün veya hizmet kalemi bulunamadı.
+                  Bu faturaya ait ürün veya hizmet kalemi
+                  bulunamadı.
                 </div>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="min-w-[850px] w-full border-collapse text-left">
+                  <table className="w-full min-w-[1350px] border-collapse text-left">
                     <thead className="bg-primary-soft">
-                      <tr className="text-xs font-bold uppercase tracking-[0.1em] text-text-muted">
-                        <th className="px-6 py-4">No</th>
-                        <th className="px-4 py-4">Ürün / Hizmet</th>
-                        <th className="px-4 py-4">Ürün ID</th>
-                        <th className="px-4 py-4 text-center">Miktar</th>
-                        <th className="px-4 py-4 text-right">Birim Fiyat</th>
-                        <th className="px-6 py-4 text-right">Tutar</th>
+                      <tr className="text-xs font-bold uppercase tracking-[0.08em] text-text-muted">
+                        <th className="px-5 py-4">No</th>
+                        <th className="px-4 py-4">
+                          Ürün / Hizmet
+                        </th>
+                        <th className="px-4 py-4 text-center">
+                          Miktar
+                        </th>
+                        <th className="px-4 py-4 text-right">
+                          Birim Fiyat
+                        </th>
+                        <th className="px-4 py-4 text-right">
+                          Ara Toplam
+                        </th>
+                        <th className="px-4 py-4 text-right">
+                          ÖTV
+                        </th>
+                        <th className="px-4 py-4 text-right">
+                          KDV
+                        </th>
+                        <th className="px-5 py-4 text-right">
+                          Satır Toplamı
+                        </th>
                       </tr>
                     </thead>
 
                     <tbody>
-                      {invoice.Lines.map((line, index) => {
-                        const lineTotal =
-                          Number(line.Price) * Number(line.Quantity);
+                      {invoice.Lines.map((line, index) => (
+                        <tr
+                          className="border-t border-app-border"
+                          key={line.InvoiceLineId}
+                        >
+                          <td className="px-5 py-5 text-sm font-bold text-text-muted">
+                            {index + 1}
+                          </td>
 
-                        return (
-                          <tr
-                            className="border-t border-app-border"
-                            key={line.InvoiceLineId}
-                          >
-                            <td className="px-6 py-5 text-sm font-bold text-text-muted">
-                              {index + 1}
-                            </td>
+                          <td className="px-4 py-5">
+                            <p className="font-bold text-foreground">
+                              {line.ItemName ??
+                                `Ürün #${line.ProductId}`}
+                            </p>
+                            <p className="mt-1 text-sm text-text-muted">
+                              Ürün ID: {line.ProductId} · Satır ID:{" "}
+                              {line.InvoiceLineId}
+                            </p>
+                          </td>
 
-                            <td className="px-4 py-5">
-                              <p className="font-bold text-foreground">
-                                {line.ItemName ??
-                                  `Ürün #${line.ProductId}`}
-                              </p>
-                              <p className="mt-1 text-sm text-text-muted">
-                                Satır ID: {line.InvoiceLineId}
-                              </p>
-                            </td>
+                          <td className="px-4 py-5 text-center font-semibold text-foreground">
+                            {line.Quantity}
+                          </td>
 
-                            <td className="px-4 py-5 text-text-muted">
-                              {line.ProductId}
-                            </td>
+                          <td className="px-4 py-5 text-right text-foreground">
+                            {formatCurrency(line.Price)}
+                          </td>
 
-                            <td className="px-4 py-5 text-center font-semibold text-foreground">
-                              {line.Quantity}
-                            </td>
+                          <td className="px-4 py-5 text-right font-semibold text-foreground">
+                            {formatCurrency(line.Subtotal)}
+                          </td>
 
-                            <td className="px-4 py-5 text-right text-foreground">
-                              {formatCurrency(line.Price)}
-                            </td>
+                          <td className="px-4 py-5 text-right">
+                            <p className="font-semibold text-foreground">
+                              {formatCurrency(
+                                line.ExciseTaxAmount,
+                              )}
+                            </p>
+                            <p className="mt-1 text-xs text-text-muted">
+                              {formatRate(line.ExciseTaxRate)}
+                            </p>
+                          </td>
 
-                            <td className="px-6 py-5 text-right font-bold text-foreground">
-                              {formatCurrency(lineTotal)}
-                            </td>
-                          </tr>
-                        );
-                      })}
+                          <td className="px-4 py-5 text-right">
+                            <p className="font-semibold text-foreground">
+                              {formatCurrency(line.VatAmount)}
+                            </p>
+                            <p className="mt-1 text-xs text-text-muted">
+                              {formatRate(line.VatRate)}
+                            </p>
+                          </td>
+
+                          <td className="px-5 py-5 text-right font-bold text-primary">
+                            {formatCurrency(line.LineTotal)}
+                          </td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
                 </div>
               )}
 
               <div className="flex justify-end border-t border-app-border bg-surface-muted px-6 py-5">
-                <div className="w-full max-w-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-text-muted">
+                <dl className="w-full max-w-md space-y-3">
+                  <div className="flex items-center justify-between gap-4">
+                    <dt className="font-semibold text-text-muted">
                       Vergi hariç toplam
-                    </span>
-                    <span className="text-2xl font-bold text-foreground">
-                      {formatCurrency(invoice.TotalAmount)}
-                    </span>
+                    </dt>
+                    <dd className="font-bold text-foreground">
+                      {formatCurrency(invoice.Subtotal)}
+                    </dd>
                   </div>
-                </div>
+
+                  <div className="flex items-center justify-between gap-4">
+                    <dt className="font-semibold text-text-muted">
+                      Toplam ÖTV
+                    </dt>
+                    <dd className="font-bold text-foreground">
+                      {formatCurrency(invoice.ExciseTaxTotal)}
+                    </dd>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-4">
+                    <dt className="font-semibold text-text-muted">
+                      Toplam KDV
+                    </dt>
+                    <dd className="font-bold text-foreground">
+                      {formatCurrency(invoice.VatTotal)}
+                    </dd>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-4 border-t border-app-border pt-4">
+                    <dt className="font-bold text-foreground">
+                      Ödenecek toplam
+                    </dt>
+                    <dd className="text-2xl font-bold text-primary">
+                      {formatCurrency(invoice.TotalAmount)}
+                    </dd>
+                  </div>
+                </dl>
               </div>
             </section>
 

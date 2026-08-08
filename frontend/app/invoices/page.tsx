@@ -322,7 +322,7 @@ export default function InvoicesPage() {
                       </th>
 
                       <th className="px-6 py-4 text-right font-semibold">
-                        Vergi hariç toplam
+                        Ödenecek toplam
                       </th>
 
                       <th className="px-6 py-4 text-right font-semibold">
