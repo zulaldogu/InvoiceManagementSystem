@@ -107,8 +107,12 @@ class CustomerResponse(CustomerBase):
 class ProductBase(BaseModel):
     ProductCode: Optional[str] = None
     ProductName: str
-    UnitPrice: Decimal
-    VatRate: Optional[Decimal] = None
+    UnitPrice: Decimal = Field(ge=0)
+    VatRate: Optional[Decimal] = Field(
+        default=None,
+        ge=0,
+        le=100,
+    )
 
 
 class ProductCreate(ProductBase):
@@ -118,8 +122,12 @@ class ProductCreate(ProductBase):
 class ProductUpdate(BaseModel):
     ProductCode: Optional[str] = None
     ProductName: Optional[str] = None
-    UnitPrice: Optional[Decimal] = None
-    VatRate: Optional[Decimal] = None
+    UnitPrice: Optional[Decimal] = Field(default=None, ge=0)
+    VatRate: Optional[Decimal] = Field(
+        default=None,
+        ge=0,
+        le=100,
+    )
 
 
 class ProductResponse(ProductBase):
@@ -214,6 +222,16 @@ class InvoiceLineCreate(BaseModel):
     ProductId: int
     Quantity: int = Field(gt=0)
     Price: Optional[Decimal] = Field(default=None, ge=0)
+    VatRate: Optional[Decimal] = Field(
+        default=None,
+        ge=0,
+        le=100,
+    )
+    ExciseTaxRate: Decimal = Field(
+        default=Decimal("0.00"),
+        ge=0,
+        le=100,
+    )
 
 
 class InvoiceLineCreateRequest(InvoiceLineCreate):
@@ -224,6 +242,16 @@ class InvoiceLineUpdate(BaseModel):
     ProductId: Optional[int] = None
     Quantity: Optional[int] = Field(default=None, gt=0)
     Price: Optional[Decimal] = Field(default=None, ge=0)
+    VatRate: Optional[Decimal] = Field(
+        default=None,
+        ge=0,
+        le=100,
+    )
+    ExciseTaxRate: Optional[Decimal] = Field(
+        default=None,
+        ge=0,
+        le=100,
+    )
 
 
 class InvoiceLineResponse(BaseModel):
@@ -233,6 +261,12 @@ class InvoiceLineResponse(BaseModel):
     ItemName: Optional[str] = None
     Quantity: int
     Price: Decimal
+    VatRate: Decimal
+    ExciseTaxRate: Decimal
+    Subtotal: Decimal
+    VatAmount: Decimal
+    ExciseTaxAmount: Decimal
+    LineTotal: Decimal
     CompanyId: Optional[int] = None
     UserId: Optional[int] = None
     RecordDate: Optional[datetime] = None
@@ -262,7 +296,10 @@ class InvoiceUpdate(BaseModel):
 
 class InvoiceResponse(InvoiceBase):
     InvoiceId: int
-    TotalAmount: Optional[Decimal] = None
+    Subtotal: Decimal
+    VatTotal: Decimal
+    ExciseTaxTotal: Decimal
+    TotalAmount: Decimal
     CompanyId: Optional[int] = None
     UserId: Optional[int] = None
     RecordDate: Optional[datetime] = None

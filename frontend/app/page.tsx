@@ -182,7 +182,7 @@ export default function Home() {
     {
       title: "Toplam Fatura Tutarı",
       value: formatCurrency(totalInvoiceAmount),
-      description: "Vergi hariç toplam tutar",
+      description: "Vergiler dahil toplam tutar",
       href: "/invoices",
       linkLabel: "Fatura detaylarını incele",
       icon: "revenue",
@@ -358,7 +358,7 @@ export default function Home() {
                             Tarih
                           </th>
                           <th className="px-6 py-4 text-right font-semibold">
-                            Vergi hariç toplam
+                            Ödenecek toplam
                           </th>
                           <th className="px-6 py-4 text-right font-semibold">
                             İşlem
@@ -461,8 +461,8 @@ export default function Home() {
                   </p>
 
                   <p className="mt-2 text-sm leading-6 text-text-muted">
-                    Fatura tutarları mevcut vergi altyapısı
-                    tamamlanana kadar vergi hariç gösterilmektedir.
+                    Fatura tutarları KDV ve ÖTV dahil olacak şekilde
+                    backend tarafından güvenli biçimde hesaplanmaktadır.
                   </p>
                 </div>
               </aside>
