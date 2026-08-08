@@ -1,115 +1,409 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
-
+import Link from "next/link";
+import CustomerFormModal from "@/components/customer-form-modal";
 import { apiRequest } from "@/lib/api";
 import type { Customer } from "@/types/customer";
 
+function SearchIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-5 w-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+    >
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-4-4" />
+    </svg>
+  );
+}
+
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const [editingCustomer, setEditingCustomer] =
+    useState<Customer | null>(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+
   const [isLoading, setIsLoading] = useState(true);
+  const [deletingCustomerId, setDeletingCustomerId] =
+    useState<number | null>(null);
+
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  async function refreshCustomers() {
+    setError(null);
+
+    try {
+      const data = await apiRequest<Customer[]>("/customers/");
+      setCustomers(data);
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Müşteriler alınırken beklenmeyen bir hata oluştu.",
+      );
+    }
+  }
 
   useEffect(() => {
-    async function loadCustomers() {
-      try {
-        const data = await apiRequest<Customer[]>(
-          "/customers/?user_id=1",
-        );
-        setCustomers(data);
-      } catch (error) {
+    let isActive = true;
+
+    apiRequest<Customer[]>("/customers/")
+      .then((data) => {
+        if (isActive) {
+          setCustomers(data);
+        }
+      })
+      .catch((error) => {
+        if (!isActive) {
+          return;
+        }
+
         setError(
           error instanceof Error
             ? error.message
-            : "Beklenmeyen bir hata oluştu.",
+            : "Müşteriler alınırken beklenmeyen bir hata oluştu.",
         );
-      } finally {
-        setIsLoading(false);
-      }
-    }
+      })
+      .finally(() => {
+        if (isActive) {
+          setIsLoading(false);
+        }
+      });
 
-    loadCustomers();
+    return () => {
+      isActive = false;
+    };
   }, []);
 
+  function openCreateForm() {
+    setEditingCustomer(null);
+    setNotice(null);
+    setIsFormOpen(true);
+  }
+
+  function openEditForm(customer: Customer) {
+    setEditingCustomer(customer);
+    setNotice(null);
+    setIsFormOpen(true);
+  }
+
+  function closeForm() {
+    setIsFormOpen(false);
+    setEditingCustomer(null);
+  }
+
+  async function handleCustomerSaved() {
+    await refreshCustomers();
+
+    setNotice(
+      editingCustomer
+        ? "Müşteri bilgileri başarıyla güncellendi."
+        : "Yeni müşteri başarıyla eklendi.",
+    );
+  }
+
+  async function handleDelete(customer: Customer) {
+    const confirmed = window.confirm(
+      `"${customer.Title}" kaydını silmek istediğinizden emin misiniz?`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingCustomerId(customer.CustomerId);
+    setError(null);
+    setNotice(null);
+
+    try {
+      await apiRequest<{ message: string }>(
+        `/customers/${customer.CustomerId}`,
+        {
+          method: "DELETE",
+        },
+      );
+
+      setCustomers((currentCustomers) =>
+        currentCustomers.filter(
+          (item) => item.CustomerId !== customer.CustomerId,
+        ),
+      );
+
+      setNotice("Müşteri başarıyla silindi.");
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Müşteri silinirken beklenmeyen bir hata oluştu.";
+
+      setError(
+        message ===
+          "Customer is used by an invoice and cannot be deleted"
+          ? "Bu müşteri bir faturada kullanıldığı için silinemez."
+          : message,
+      );
+    } finally {
+      setDeletingCustomerId(null);
+    }
+  }
+
+  const normalizedQuery = searchQuery
+    .trim()
+    .toLocaleLowerCase("tr-TR");
+
+  const filteredCustomers = customers.filter((customer) => {
+    if (!normalizedQuery) {
+      return true;
+    }
+
+    const taxNumber = customer.TaxNumber ?? "";
+    const email = customer.EMail ?? "";
+
+    return (
+      customer.Title.toLocaleLowerCase("tr-TR").includes(
+        normalizedQuery,
+      ) ||
+      taxNumber.toLocaleLowerCase("tr-TR").includes(
+        normalizedQuery,
+      ) ||
+      email.toLocaleLowerCase("tr-TR").includes(
+        normalizedQuery,
+      )
+    );
+  });
+
   return (
-    <main className="min-h-screen bg-slate-950 px-8 py-10 text-slate-100">
-      <section className="mx-auto max-w-6xl">
-        <Link
-          href="/"
-          className="mb-8 inline-flex text-sm font-medium text-cyan-300 transition hover:text-cyan-200"
-        >
-          ← Ana panele dön
-        </Link>
+    <main className="min-h-[calc(100vh-5rem)] bg-background px-5 py-8 lg:px-8 lg:py-10">
+      <section className="mx-auto max-w-[1440px]">
+        <div className="mb-8 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+          <div>
+            <h1 className="text-3xl font-semibold tracking-tight text-foreground lg:text-4xl">
+              Müşteriler
+            </h1>
 
-        <div className="mb-8">
-          <p className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-cyan-300">
-            Fatura Yönetim Sistemi
-          </p>
+            <p className="mt-2 text-sm text-text-muted lg:text-base">
+              Müşteri firma ve iletişim kayıtlarını yönetin.
+            </p>
+          </div>
 
-          <h1 className="text-4xl font-semibold tracking-tight">
-            Müşteriler
-          </h1>
-
-          <p className="mt-4 text-slate-300">
-            FastAPI backend üzerinden alınan müşteri kayıtları.
-          </p>
+          <button
+            type="button"
+            onClick={openCreateForm}
+            className="inline-flex items-center justify-center gap-2 self-start rounded-md bg-primary px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark sm:self-auto"
+          >
+            <span className="text-xl leading-none">+</span>
+            Yeni Müşteri Ekle
+          </button>
         </div>
 
-        {isLoading && (
-          <p className="text-slate-300">Müşteriler yükleniyor...</p>
+        <div className="mb-6 rounded-lg border border-app-border bg-surface p-4 shadow-[0_4px_12px_rgba(15,23,42,0.03)]">
+          <label
+            htmlFor="customer-search"
+            className="mb-2 block text-xs font-semibold uppercase tracking-[0.1em] text-text-muted"
+          >
+            Müşteri ara
+          </label>
+
+          <div className="relative">
+            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-muted">
+              <SearchIcon />
+            </span>
+
+            <input
+              id="customer-search"
+              type="search"
+              value={searchQuery}
+              onChange={(event) =>
+                setSearchQuery(event.target.value)
+              }
+              placeholder="Unvan, vergi numarası veya e-posta ile ara..."
+              className="w-full rounded-md border border-app-border bg-surface px-4 py-3 pl-11 text-sm text-foreground outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary-soft"
+            />
+          </div>
+        </div>
+
+        {notice && (
+          <div className="mb-6 rounded-lg border border-green-200 bg-green-50 px-5 py-4 text-sm text-success">
+            {notice}
+          </div>
         )}
 
         {error && (
-          <div className="rounded-lg border border-red-800 bg-red-950/50 p-4 text-red-200">
+          <div
+            role="alert"
+            className="mb-6 rounded-lg border border-red-200 bg-red-50 px-5 py-4 text-sm text-danger"
+          >
             {error}
           </div>
         )}
 
-        {!isLoading && !error && customers.length === 0 && (
-          <p className="text-slate-300">Müşteri bulunamadı.</p>
-        )}
+        {isLoading ? (
+          <div className="rounded-lg border border-app-border bg-surface p-8 text-sm text-text-muted">
+            Müşteriler yükleniyor...
+          </div>
+        ) : (
+          <div className="overflow-hidden rounded-lg border border-app-border bg-surface shadow-[0_4px_12px_rgba(15,23,42,0.03)]">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-app-border px-6 py-4">
+              <p className="text-sm text-text-muted">
+                <span className="font-semibold text-foreground">
+                  {filteredCustomers.length}
+                </span>{" "}
+                müşteri gösteriliyor
+              </p>
 
-        {!isLoading && !error && customers.length > 0 && (
-          <div className="overflow-x-auto rounded-lg border border-slate-800">
-            <table className="w-full text-left">
-              <thead className="bg-slate-900 text-sm text-slate-300">
-                <tr>
-                  <th className="px-5 py-4">Unvan</th>
-                  <th className="px-5 py-4">Vergi numarası</th>
-                  <th className="px-5 py-4">E-posta</th>
-                  <th className="px-5 py-4">Adres</th>
-                </tr>
-              </thead>
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="text-sm font-semibold text-primary transition hover:text-primary-dark"
+                >
+                  Aramayı temizle
+                </button>
+              )}
+            </div>
 
-              <tbody className="divide-y divide-slate-800">
-                {customers.map((customer) => (
-                  <tr
-                    key={customer.CustomerId}
-                    className="bg-slate-950"
-                  >
-                    <td className="px-5 py-4 font-medium text-cyan-300">
-                      {customer.Title}
-                    </td>
+            {filteredCustomers.length === 0 ? (
+              <div className="px-6 py-14 text-center">
+                <p className="font-semibold text-foreground">
+                  {searchQuery
+                    ? "Arama kriterine uygun müşteri bulunamadı."
+                    : "Henüz müşteri kaydı bulunmuyor."}
+                </p>
 
-                    <td className="px-5 py-4">
-                      {customer.TaxNumber ?? "Belirtilmemiş"}
-                    </td>
+                <p className="mt-2 text-sm text-text-muted">
+                  {searchQuery
+                    ? "Farklı bir unvan, vergi numarası veya e-posta deneyin."
+                    : "Yeni bir müşteri ekleyerek başlayabilirsiniz."}
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[1000px] text-left">
+                  <thead className="bg-surface-muted text-xs uppercase tracking-[0.08em] text-text-muted">
+                    <tr>
+                      <th className="px-6 py-4 font-semibold">
+                        Müşteri unvanı
+                      </th>
 
-                    <td className="px-5 py-4">
-                      {customer.EMail ?? "Belirtilmemiş"}
-                    </td>
+                      <th className="px-6 py-4 font-semibold">
+                        Vergi numarası
+                      </th>
 
-                    <td className="px-5 py-4">
-                      {customer.Address ?? "Belirtilmemiş"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      <th className="px-6 py-4 font-semibold">
+                        E-posta
+                      </th>
+
+                      <th className="px-6 py-4 font-semibold">
+                        Adres
+                      </th>
+
+                      <th className="px-6 py-4 text-right font-semibold">
+                        İşlemler
+                      </th>
+                    </tr>
+                  </thead>
+
+                  <tbody className="divide-y divide-app-border">
+                    {filteredCustomers.map((customer) => (
+                      <tr
+                        key={customer.CustomerId}
+                        className="transition hover:bg-surface-muted/60"
+                      >
+                        <td className="px-6 py-4">
+                          <p className="font-semibold text-foreground">
+                            {customer.Title}
+                          </p>
+
+                          <p className="mt-0.5 text-xs text-text-muted">
+                            ID: {customer.CustomerId}
+                          </p>
+                        </td>
+
+                        <td className="px-6 py-4 text-sm text-text-muted">
+                          {customer.TaxNumber ?? "—"}
+                        </td>
+
+                        <td className="px-6 py-4">
+                          {customer.EMail ? (
+                            <a
+                              href={`mailto:${customer.EMail}`}
+                              className="text-sm font-medium text-primary transition hover:text-primary-dark"
+                            >
+                              {customer.EMail}
+                            </a>
+                          ) : (
+                            <span className="text-sm text-text-muted">
+                              —
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="max-w-sm px-6 py-4 text-sm leading-6 text-text-muted">
+                          <span className="line-clamp-2">
+                            {customer.Address ?? "—"}
+                          </span>
+                        </td>
+
+                        <td className="px-6 py-4">
+                          <div className="flex justify-end gap-2">
+                            <Link
+  href={`/customers/${customer.CustomerId}`}
+className="inline-flex h-10 min-w-20 items-center justify-center rounded-md border border-app-border px-3 text-sm font-semibold text-primary transition hover:border-primary hover:bg-primary-soft">
+  Detay
+</Link>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                openEditForm(customer)
+                              }
+className="inline-flex h-10 min-w-20 items-center justify-center rounded-md border border-app-border px-3 text-sm font-semibold text-primary transition hover:border-primary hover:bg-primary-soft"                            >
+                              Düzenle
+                            </button>
+
+                            <button
+                              type="button"
+                              disabled={
+                                deletingCustomerId ===
+                                customer.CustomerId
+                              }
+                              onClick={() =>
+                                handleDelete(customer)
+                              }
+className="inline-flex h-10 min-w-20 items-center justify-center rounded-md border border-app-border px-3 text-sm font-semibold text-danger transition hover:border-danger hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"                            >
+                              {deletingCustomerId ===
+                              customer.CustomerId
+                                ? "Siliniyor..."
+                                : "Sil"}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
       </section>
+
+      {isFormOpen && (
+        <CustomerFormModal
+          key={editingCustomer?.CustomerId ?? "new-customer"}
+          customer={editingCustomer}
+          onClose={closeForm}
+          onSaved={handleCustomerSaved}
+        />
+      )}
     </main>
   );
 }

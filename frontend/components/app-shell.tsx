@@ -1,0 +1,372 @@
+"use client";
+
+import type { ReactNode } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+
+import {
+  apiRequest,
+  clearAccessToken,
+  getAccessToken,
+} from "@/lib/api";
+import type { CurrentUser } from "@/types/auth";
+
+type AppShellProps = {
+  children: ReactNode;
+};
+
+type IconName =
+  | "dashboard"
+  | "customers"
+  | "products"
+  | "invoices";
+
+const navigation: {
+  label: string;
+  href: string;
+  icon: IconName;
+}[] = [
+  {
+    label: "Genel Bakış",
+    href: "/",
+    icon: "dashboard",
+  },
+  {
+    label: "Faturalar",
+    href: "/invoices",
+    icon: "invoices",
+  },
+  {
+    label: "Müşteriler",
+    href: "/customers",
+    icon: "customers",
+  },
+  {
+    label: "Ürün ve Hizmetler",
+    href: "/products",
+    icon: "products",
+  },
+];
+
+function NavigationIcon({ name }: { name: IconName }) {
+  const paths = {
+    dashboard: (
+      <>
+        <rect x="3" y="3" width="7" height="7" rx="1" />
+        <rect x="14" y="3" width="7" height="7" rx="1" />
+        <rect x="3" y="14" width="7" height="7" rx="1" />
+        <rect x="14" y="14" width="7" height="7" rx="1" />
+      </>
+    ),
+    customers: (
+      <>
+        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      </>
+    ),
+    products: (
+      <>
+        <path d="m21 8-9-5-9 5 9 5 9-5Z" />
+        <path d="m3 8 9 5 9-5" />
+        <path d="M3 8v8l9 5 9-5V8" />
+        <path d="M12 13v8" />
+      </>
+    ),
+    invoices: (
+      <>
+        <path d="M6 2h9l5 5v15H6z" />
+        <path d="M14 2v6h6" />
+        <path d="M9 13h6" />
+        <path d="M9 17h6" />
+      </>
+    ),
+  };
+
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-5 w-5 shrink-0"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      {paths[name]}
+    </svg>
+  );
+}
+
+function MenuIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-6 w-6"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+    >
+      <path d="M4 6h16" />
+      <path d="M4 12h16" />
+      <path d="M4 18h16" />
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-6 w-6"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+    >
+      <path d="m6 6 12 12" />
+      <path d="m18 6-12 12" />
+    </svg>
+  );
+}
+
+function isActiveRoute(pathname: string, href: string) {
+  if (href === "/") {
+    return pathname === "/";
+  }
+
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+export default function AppShell({ children }: AppShellProps) {
+  const pathname = usePathname();
+  const router = useRouter();
+
+  const [currentUser, setCurrentUser] =
+    useState<CurrentUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] =
+    useState(false);
+
+  const isLoginPage = pathname === "/login";
+
+  useEffect(() => {
+    if (isLoginPage) {
+      return;
+    }
+
+    const accessToken = getAccessToken();
+
+    if (!accessToken) {
+      router.replace("/login");
+      return;
+    }
+
+    let isActive = true;
+
+    apiRequest<CurrentUser>("/auth/me")
+      .then((user) => {
+        if (!isActive) {
+          return;
+        }
+
+        setCurrentUser(user);
+        setIsLoading(false);
+      })
+      .catch(() => {
+        if (!isActive) {
+          return;
+        }
+
+        clearAccessToken();
+        router.replace("/login");
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [isLoginPage, router]);
+
+  function handleLogout() {
+    clearAccessToken();
+    setCurrentUser(null);
+    setIsMobileMenuOpen(false);
+    router.replace("/login");
+    router.refresh();
+  }
+
+  function closeMobileMenu() {
+    setIsMobileMenuOpen(false);
+  }
+
+  if (isLoginPage) {
+    return <>{children}</>;
+  }
+
+  if (isLoading || !currentUser) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-background text-foreground">
+        <div className="text-center">
+          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-primary-soft border-t-primary" />
+
+          <p className="mt-4 text-sm text-text-muted">
+            Oturum doğrulanıyor...
+          </p>
+        </div>
+      </main>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background text-foreground">
+      {isMobileMenuOpen && (
+        <button
+          type="button"
+          aria-label="Menüyü kapat"
+          onClick={closeMobileMenu}
+          className="fixed inset-0 z-30 bg-slate-950/40 backdrop-blur-[2px] lg:hidden"
+        />
+      )}
+
+      <aside
+        className={`fixed inset-y-0 left-0 z-40 flex w-[280px] flex-col border-r border-app-border bg-surface transition-transform duration-200 lg:translate-x-0 ${
+          isMobileMenuOpen
+            ? "translate-x-0"
+            : "-translate-x-full"
+        }`}
+      >
+        <div className="flex h-20 items-center justify-between border-b border-app-border px-6">
+          <Link
+            href="/"
+            onClick={closeMobileMenu}
+            className="flex min-w-0 items-center gap-3"
+          >
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary font-bold text-white">
+              FY
+            </span>
+
+            <span className="min-w-0">
+              <span className="block truncate text-base font-semibold text-primary-dark">
+                Fatura Yönetimi
+              </span>
+
+              <span className="block truncate text-xs text-text-muted">
+                Kurumsal Panel
+              </span>
+            </span>
+          </Link>
+
+          <button
+            type="button"
+            aria-label="Menüyü kapat"
+            onClick={closeMobileMenu}
+            className="rounded-md p-2 text-text-muted transition hover:bg-surface-muted hover:text-primary lg:hidden"
+          >
+            <CloseIcon />
+          </button>
+        </div>
+
+        <div className="px-5 pt-6">
+          <Link
+            href="/invoices/new"
+            onClick={closeMobileMenu}
+            className="flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark"
+          >
+            <span className="text-xl leading-none">+</span>
+            Yeni Fatura Oluştur
+          </Link>
+        </div>
+
+        <nav className="flex-1 space-y-1 px-4 py-6">
+          <p className="mb-3 px-3 text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+            Ana Menü
+          </p>
+
+          {navigation.map((item) => {
+            const isActive = isActiveRoute(pathname, item.href);
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={closeMobileMenu}
+                className={`relative flex items-center gap-3 rounded-md px-4 py-3 text-sm font-medium transition ${
+                  isActive
+                    ? "bg-primary-soft text-primary-dark"
+                    : "text-text-muted hover:bg-surface-muted hover:text-primary-dark"
+                }`}
+              >
+                {isActive && (
+                  <span className="absolute inset-y-2 left-0 w-1 rounded-r-full bg-primary" />
+                )}
+
+                <NavigationIcon name={item.icon} />
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+      </aside>
+
+      <div className="min-h-screen lg:pl-[280px]">
+        <header className="sticky top-0 z-20 flex h-20 items-center justify-between border-b border-app-border bg-surface/95 px-5 backdrop-blur lg:px-8">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              aria-label="Menüyü aç"
+              aria-expanded={isMobileMenuOpen}
+              onClick={() => setIsMobileMenuOpen(true)}
+              className="rounded-md p-2 text-text-muted transition hover:bg-surface-muted hover:text-primary lg:hidden"
+            >
+              <MenuIcon />
+            </button>
+
+            <p className="text-base font-semibold text-foreground">
+              Fatura Yönetim Sistemi
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="hidden text-right sm:block">
+              <p className="text-sm font-semibold text-foreground">
+                {currentUser.UserName}
+              </p>
+
+              <p className="text-xs text-text-muted">
+                {currentUser.IsSuperAdmin
+                  ? "Süper Yönetici"
+                  : `Firma #${currentUser.CompanyId}`}
+              </p>
+            </div>
+
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-soft text-sm font-semibold text-primary-dark">
+              {currentUser.UserName.charAt(0).toUpperCase()}
+            </span>
+
+                        <button
+              type="button"
+              onClick={handleLogout}
+              className="inline-flex rounded-md px-3 py-2 text-sm font-medium text-danger transition hover:bg-red-50"
+            >
+              <span className="hidden sm:inline">
+                Oturumu kapat
+              </span>
+
+              <span className="sm:hidden">
+                Çıkış
+              </span>
+            </button>
+          </div>
+        </header>
+
+        <div>{children}</div>
+      </div>
+    </div>
+  );
+}
