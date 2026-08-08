@@ -101,7 +101,30 @@ class Invoice(Base):
     CustomerId = Column(Integer, ForeignKey("Customer.CustomerId"))
     InvoiceNumber = Column(String(20), nullable=False)
     InvoiceDate = Column(DateTime)
-    TotalAmount = Column(Numeric(18, 2))
+    Subtotal = Column(
+        Numeric(18, 2),
+        nullable=False,
+        default=0,
+        server_default="0",
+    )
+    VatTotal = Column(
+        Numeric(18, 2),
+        nullable=False,
+        default=0,
+        server_default="0",
+    )
+    ExciseTaxTotal = Column(
+        Numeric(18, 2),
+        nullable=False,
+        default=0,
+        server_default="0",
+    )
+    TotalAmount = Column(
+        Numeric(18, 2),
+        nullable=False,
+        default=0,
+        server_default="0",
+    )
     CompanyId = Column(
         Integer,
         ForeignKey("Company.CompanyId"),
@@ -121,6 +144,42 @@ class InvoiceLine(Base):
     ItemName = Column(String(100))
     Quantity = Column(Integer, nullable=False)
     Price = Column(Numeric(18, 2), nullable=False)
+    VatRate = Column(
+        Numeric(5, 2),
+        nullable=False,
+        default=0,
+        server_default="0",
+    )
+    ExciseTaxRate = Column(
+        Numeric(5, 2),
+        nullable=False,
+        default=0,
+        server_default="0",
+    )
+    Subtotal = Column(
+        Numeric(18, 2),
+        nullable=False,
+        default=0,
+        server_default="0",
+    )
+    VatAmount = Column(
+        Numeric(18, 2),
+        nullable=False,
+        default=0,
+        server_default="0",
+    )
+    ExciseTaxAmount = Column(
+        Numeric(18, 2),
+        nullable=False,
+        default=0,
+        server_default="0",
+    )
+    LineTotal = Column(
+        Numeric(18, 2),
+        nullable=False,
+        default=0,
+        server_default="0",
+    )
     CompanyId = Column(
         Integer,
         ForeignKey("Company.CompanyId"),

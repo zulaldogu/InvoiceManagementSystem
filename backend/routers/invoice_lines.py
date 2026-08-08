@@ -8,6 +8,11 @@ import models
 import schemas
 from auth import require_role
 from database import get_db
+from invoice_calculations import (
+    ZERO,
+    apply_line_calculation,
+    recalculate_invoice_totals,
+)
 
 
 router = APIRouter(
@@ -26,36 +31,6 @@ def get_company_id(current_user: models.User) -> int:
     return current_user.CompanyId
 
 
-def recalculate_invoice_total(
-    invoice_id: int,
-    company_id: int,
-    db: Session,
-) -> None:
-    invoice = db.query(models.Invoice).filter(
-        models.Invoice.InvoiceId == invoice_id,
-        models.Invoice.CompanyId == company_id,
-    ).first()
-
-    if invoice is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Invoice not found",
-        )
-
-    invoice_lines = db.query(models.InvoiceLine).filter(
-        models.InvoiceLine.InvoiceId == invoice_id,
-        models.InvoiceLine.CompanyId == company_id,
-    ).all()
-
-    invoice.TotalAmount = sum(
-        (
-            Decimal(line.Quantity) * Decimal(line.Price)
-            for line in invoice_lines
-        ),
-        Decimal("0.00"),
-    )
-
-
 @router.post("/", response_model=schemas.InvoiceLineResponse)
 def create_invoice_line(
     invoice_line: schemas.InvoiceLineCreateRequest,
@@ -67,10 +42,14 @@ def create_invoice_line(
 ):
     company_id = get_company_id(current_user)
 
-    invoice = db.query(models.Invoice).filter(
-        models.Invoice.InvoiceId == invoice_line.InvoiceId,
-        models.Invoice.CompanyId == company_id,
-    ).first()
+    invoice = (
+        db.query(models.Invoice)
+        .filter(
+            models.Invoice.InvoiceId == invoice_line.InvoiceId,
+            models.Invoice.CompanyId == company_id,
+        )
+        .first()
+    )
 
     if invoice is None:
         raise HTTPException(
@@ -78,10 +57,14 @@ def create_invoice_line(
             detail="Invoice not found",
         )
 
-    product = db.query(models.Product).filter(
-        models.Product.ProductId == invoice_line.ProductId,
-        models.Product.CompanyId == company_id,
-    ).first()
+    product = (
+        db.query(models.Product)
+        .filter(
+            models.Product.ProductId == invoice_line.ProductId,
+            models.Product.CompanyId == company_id,
+        )
+        .first()
+    )
 
     if product is None:
         raise HTTPException(
@@ -95,6 +78,12 @@ def create_invoice_line(
         else Decimal(product.UnitPrice)
     )
 
+    vat_rate = (
+        invoice_line.VatRate
+        if invoice_line.VatRate is not None
+        else Decimal(product.VatRate or ZERO)
+    )
+
     try:
         new_invoice_line = models.InvoiceLine(
             InvoiceId=invoice.InvoiceId,
@@ -102,14 +91,18 @@ def create_invoice_line(
             ItemName=product.ProductName,
             Quantity=invoice_line.Quantity,
             Price=line_price,
+            VatRate=vat_rate,
+            ExciseTaxRate=invoice_line.ExciseTaxRate,
             CompanyId=company_id,
             UserId=current_user.UserId,
         )
 
+        apply_line_calculation(new_invoice_line)
+
         db.add(new_invoice_line)
         db.flush()
 
-        recalculate_invoice_total(
+        recalculate_invoice_totals(
             invoice.InvoiceId,
             company_id,
             db,
@@ -138,11 +131,12 @@ def get_invoice_lines(
 ):
     company_id = get_company_id(current_user)
 
-    return db.query(models.InvoiceLine).filter(
-        models.InvoiceLine.CompanyId == company_id
-    ).order_by(
-        models.InvoiceLine.InvoiceLineId
-    ).all()
+    return (
+        db.query(models.InvoiceLine)
+        .filter(models.InvoiceLine.CompanyId == company_id)
+        .order_by(models.InvoiceLine.InvoiceLineId)
+        .all()
+    )
 
 
 @router.get(
@@ -159,10 +153,14 @@ def get_lines_by_invoice(
 ):
     company_id = get_company_id(current_user)
 
-    invoice = db.query(models.Invoice).filter(
-        models.Invoice.InvoiceId == invoice_id,
-        models.Invoice.CompanyId == company_id,
-    ).first()
+    invoice = (
+        db.query(models.Invoice)
+        .filter(
+            models.Invoice.InvoiceId == invoice_id,
+            models.Invoice.CompanyId == company_id,
+        )
+        .first()
+    )
 
     if invoice is None:
         raise HTTPException(
@@ -170,12 +168,15 @@ def get_lines_by_invoice(
             detail="Invoice not found",
         )
 
-    return db.query(models.InvoiceLine).filter(
-        models.InvoiceLine.InvoiceId == invoice_id,
-        models.InvoiceLine.CompanyId == company_id,
-    ).order_by(
-        models.InvoiceLine.InvoiceLineId
-    ).all()
+    return (
+        db.query(models.InvoiceLine)
+        .filter(
+            models.InvoiceLine.InvoiceId == invoice_id,
+            models.InvoiceLine.CompanyId == company_id,
+        )
+        .order_by(models.InvoiceLine.InvoiceLineId)
+        .all()
+    )
 
 
 @router.put(
@@ -193,10 +194,14 @@ def update_invoice_line(
 ):
     company_id = get_company_id(current_user)
 
-    invoice_line = db.query(models.InvoiceLine).filter(
-        models.InvoiceLine.InvoiceLineId == invoice_line_id,
-        models.InvoiceLine.CompanyId == company_id,
-    ).first()
+    invoice_line = (
+        db.query(models.InvoiceLine)
+        .filter(
+            models.InvoiceLine.InvoiceLineId == invoice_line_id,
+            models.InvoiceLine.CompanyId == company_id,
+        )
+        .first()
+    )
 
     if invoice_line is None:
         raise HTTPException(
@@ -211,11 +216,15 @@ def update_invoice_line(
             "ProductId" in update_data
             and update_data["ProductId"] is not None
         ):
-            product = db.query(models.Product).filter(
-                models.Product.ProductId
-                == update_data["ProductId"],
-                models.Product.CompanyId == company_id,
-            ).first()
+            product = (
+                db.query(models.Product)
+                .filter(
+                    models.Product.ProductId
+                    == update_data["ProductId"],
+                    models.Product.CompanyId == company_id,
+                )
+                .first()
+            )
 
             if product is None:
                 raise HTTPException(
@@ -229,6 +238,11 @@ def update_invoice_line(
             if "Price" not in update_data:
                 invoice_line.Price = product.UnitPrice
 
+            if "VatRate" not in update_data:
+                invoice_line.VatRate = Decimal(
+                    product.VatRate or ZERO
+                )
+
         if (
             "Quantity" in update_data
             and update_data["Quantity"] is not None
@@ -241,11 +255,26 @@ def update_invoice_line(
         ):
             invoice_line.Price = update_data["Price"]
 
+        if (
+            "VatRate" in update_data
+            and update_data["VatRate"] is not None
+        ):
+            invoice_line.VatRate = update_data["VatRate"]
+
+        if (
+            "ExciseTaxRate" in update_data
+            and update_data["ExciseTaxRate"] is not None
+        ):
+            invoice_line.ExciseTaxRate = update_data[
+                "ExciseTaxRate"
+            ]
+
         invoice_line.UserId = current_user.UserId
 
+        apply_line_calculation(invoice_line)
         db.flush()
 
-        recalculate_invoice_total(
+        recalculate_invoice_totals(
             invoice_line.InvoiceId,
             company_id,
             db,
@@ -272,10 +301,14 @@ def delete_invoice_line(
 ):
     company_id = get_company_id(current_user)
 
-    invoice_line = db.query(models.InvoiceLine).filter(
-        models.InvoiceLine.InvoiceLineId == invoice_line_id,
-        models.InvoiceLine.CompanyId == company_id,
-    ).first()
+    invoice_line = (
+        db.query(models.InvoiceLine)
+        .filter(
+            models.InvoiceLine.InvoiceLineId == invoice_line_id,
+            models.InvoiceLine.CompanyId == company_id,
+        )
+        .first()
+    )
 
     if invoice_line is None:
         raise HTTPException(
@@ -289,7 +322,7 @@ def delete_invoice_line(
         db.delete(invoice_line)
         db.flush()
 
-        recalculate_invoice_total(
+        recalculate_invoice_totals(
             invoice_id,
             company_id,
             db,
