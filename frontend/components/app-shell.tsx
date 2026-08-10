@@ -20,7 +20,8 @@ type IconName =
   | "dashboard"
   | "customers"
   | "products"
-  | "invoices";
+  | "invoices"
+  | "companies";
 
 const navigation: {
   label: string;
@@ -81,6 +82,18 @@ function NavigationIcon({ name }: { name: IconName }) {
         <path d="M14 2v6h6" />
         <path d="M9 13h6" />
         <path d="M9 17h6" />
+      </>
+    ),
+    companies: (
+      <>
+        <path d="M3 21h18" />
+        <path d="M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16" />
+        <path d="M9 7h2" />
+        <path d="M13 7h2" />
+        <path d="M9 11h2" />
+        <path d="M13 11h2" />
+        <path d="M9 15h2" />
+        <path d="M13 15h2" />
       </>
     ),
   };
@@ -223,6 +236,17 @@ export default function AppShell({ children }: AppShellProps) {
     );
   }
 
+    const visibleNavigation = [
+    ...navigation,
+    {
+      label: currentUser.IsSuperAdmin
+        ? "Firmalar"
+        : "Firma Bilgilerim",
+      href: "/companies",
+      icon: "companies" as const,
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       {isMobileMenuOpen && (
@@ -288,8 +312,8 @@ export default function AppShell({ children }: AppShellProps) {
             Ana Menü
           </p>
 
-          {navigation.map((item) => {
-            const isActive = isActiveRoute(pathname, item.href);
+            {visibleNavigation.map((item) => {
+              const isActive = isActiveRoute(pathname, item.href);
 
             return (
               <Link
