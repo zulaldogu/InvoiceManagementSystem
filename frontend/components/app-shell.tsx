@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import AccountSettingsPanel from "@/components/account-settings-panel";
 
 import {
   apiRequest,
@@ -11,6 +12,7 @@ import {
   getAccessToken,
 } from "@/lib/api";
 import type { CurrentUser } from "@/types/auth";
+import type { User } from "@/types/user";
 
 type AppShellProps = {
   children: ReactNode;
@@ -21,7 +23,8 @@ type IconName =
   | "customers"
   | "products"
   | "invoices"
-  | "companies";
+  | "companies"
+  | "users";
 
 const navigation: {
   label: string;
@@ -96,6 +99,12 @@ function NavigationIcon({ name }: { name: IconName }) {
         <path d="M13 15h2" />
       </>
     ),
+        users: (
+      <>
+        <circle cx="12" cy="7" r="4" />
+        <path d="M4 21a8 8 0 0 1 16 0" />
+      </>
+    ),
   };
 
   return (
@@ -166,6 +175,8 @@ export default function AppShell({ children }: AppShellProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] =
     useState(false);
+  const [isAccountSettingsOpen, setIsAccountSettingsOpen] =
+    useState(false);
 
   const isLoginPage = pathname === "/login";
 
@@ -206,12 +217,17 @@ export default function AppShell({ children }: AppShellProps) {
     };
   }, [isLoginPage, router]);
 
-  function handleLogout() {
+   function handleLogout() {
     clearAccessToken();
     setCurrentUser(null);
     setIsMobileMenuOpen(false);
+    setIsAccountSettingsOpen(false);
     router.replace("/login");
     router.refresh();
+  }
+
+  function handleUserUpdated(user: User) {
+    setCurrentUser(user);
   }
 
   function closeMobileMenu() {
@@ -236,7 +252,7 @@ export default function AppShell({ children }: AppShellProps) {
     );
   }
 
-    const visibleNavigation = [
+     const visibleNavigation = [
     ...navigation,
     {
       label: currentUser.IsSuperAdmin
@@ -245,10 +261,24 @@ export default function AppShell({ children }: AppShellProps) {
       href: "/companies",
       icon: "companies" as const,
     },
+    {
+      label: currentUser.IsSuperAdmin
+        ? "Kullanıcılar"
+        : "Firma Kullanıcıları",
+      href: "/users",
+      icon: "users" as const,
+    },
   ];
-
   return (
     <div className="min-h-screen bg-background text-foreground">
+            {isAccountSettingsOpen && (
+        <AccountSettingsPanel
+          currentUser={currentUser}
+          onClose={() => setIsAccountSettingsOpen(false)}
+          onUpdated={handleUserUpdated}
+          onLogout={handleLogout}
+        />
+      )}
       {isMobileMenuOpen && (
         <button
           type="button"
@@ -356,7 +386,16 @@ export default function AppShell({ children }: AppShellProps) {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+                    <button
+            type="button"
+            aria-label="Hesap ayarlarını aç"
+            aria-expanded={isAccountSettingsOpen}
+            onClick={() => {
+              setIsMobileMenuOpen(false);
+              setIsAccountSettingsOpen(true);
+            }}
+            className="flex items-center gap-3 rounded-lg px-2 py-1.5 text-left transition hover:bg-surface-muted"
+          >
             <div className="hidden text-right sm:block">
               <p className="text-sm font-semibold text-foreground">
                 {currentUser.UserName}
@@ -373,20 +412,13 @@ export default function AppShell({ children }: AppShellProps) {
               {currentUser.UserName.charAt(0).toUpperCase()}
             </span>
 
-                        <button
-              type="button"
-              onClick={handleLogout}
-              className="inline-flex rounded-md px-3 py-2 text-sm font-medium text-danger transition hover:bg-red-50"
+            <span
+              aria-hidden="true"
+              className="flex h-9 w-9 items-center justify-center rounded-md border border-app-border text-lg text-text-muted"
             >
-              <span className="hidden sm:inline">
-                Oturumu kapat
-              </span>
-
-              <span className="sm:hidden">
-                Çıkış
-              </span>
-            </button>
-          </div>
+              ⚙
+            </span>
+          </button>
         </header>
 
         <div>{children}</div>
