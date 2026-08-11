@@ -105,7 +105,7 @@ export default function ProductDetailPage() {
   }
 
   return (
-    <main className="min-h-full bg-background px-5 py-8 sm:px-8 lg:px-10">
+    <main className="min-h-full bg-background px-4 py-6 sm:px-6 lg:px-7">
       <div className="mx-auto max-w-[1440px]">
         <Link
           className="inline-flex items-center gap-2 text-sm font-semibold text-primary transition hover:text-primary-dark"
@@ -144,7 +144,7 @@ export default function ProductDetailPage() {
                   </span>
                 </div>
 
-                <h1 className="mt-3 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+                <h1 className="mt-3 text-3xl font-bold tracking-tight text-foreground sm:text-3xl">
                   {product.ProductName}
                 </h1>
 

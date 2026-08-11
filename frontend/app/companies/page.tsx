@@ -243,7 +243,7 @@ export default function CompaniesPage() {
 
   if (isLoading) {
     return (
-      <main className="min-h-[calc(100vh-5rem)] bg-background px-5 py-8 lg:px-8 lg:py-10">
+      <main className="min-h-[calc(100vh-4rem)] bg-background px-4 py-6 lg:px-6 lg:py-7">
         <div className="mx-auto max-w-[1440px] rounded-lg border border-app-border bg-surface p-8 text-sm text-text-muted">
           Firma bilgileri yükleniyor...
         </div>
@@ -253,7 +253,7 @@ export default function CompaniesPage() {
 
   if (!currentUser) {
     return (
-      <main className="min-h-[calc(100vh-5rem)] bg-background px-5 py-8 lg:px-8 lg:py-10">
+      <main className="min-h-[calc(100vh-4rem)] bg-background px-4 py-6 lg:px-6 lg:py-7">
         <div
           role="alert"
           className="mx-auto max-w-[1440px] rounded-lg border border-red-200 bg-red-50 px-5 py-4 text-sm text-danger"
@@ -266,14 +266,14 @@ export default function CompaniesPage() {
 
   if (!currentUser.IsSuperAdmin) {
     return (
-      <main className="min-h-[calc(100vh-5rem)] bg-background px-5 py-8 lg:px-8 lg:py-10">
+      <main className="min-h-[calc(100vh-4rem)] bg-background px-4 py-6 lg:px-6 lg:py-7">
         <section className="mx-auto max-w-[1440px]">
           <div className="mb-8">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">
               Kurumsal bilgiler
             </p>
 
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground lg:text-4xl">
+            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground lg:text-3xl">
               Firma Bilgilerim
             </h1>
 
@@ -390,7 +390,7 @@ export default function CompaniesPage() {
   }
 
   return (
-    <main className="min-h-[calc(100vh-5rem)] bg-background px-5 py-8 lg:px-8 lg:py-10">
+    <main className="min-h-[calc(100vh-4rem)] bg-background px-4 py-6 lg:px-6 lg:py-7">
       <section className="mx-auto max-w-[1440px]">
         <div className="mb-8 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
           <div>
@@ -398,7 +398,7 @@ export default function CompaniesPage() {
               Sistem yönetimi
             </p>
 
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground lg:text-4xl">
+            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground lg:text-3xl">
               Firmalar
             </h1>
 

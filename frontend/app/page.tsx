@@ -219,11 +219,11 @@ export default function Home() {
   );
 
   return (
-    <main className="min-h-[calc(100vh-5rem)] bg-background px-5 py-8 lg:px-8 lg:py-10">
+    <main className="min-h-[calc(100vh-4rem)] bg-background px-4 py-6 lg:px-6 lg:py-7">
       <section className="mx-auto max-w-[1440px]">
         <div className="mb-8 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
           <div>
-            <h1 className="text-3xl font-semibold tracking-tight text-foreground lg:text-4xl">
+            <h1 className="text-3xl font-semibold tracking-tight text-foreground lg:text-3xl">
               Genel Bakış
             </h1>
 
