@@ -399,7 +399,7 @@ export default function AuthorizationPage() {
 
   if (isLoading) {
     return (
-      <main className="min-h-[calc(100vh-5rem)] bg-background px-5 py-8 lg:px-8 lg:py-10">
+      <main className="min-h-[calc(100vh-4rem)] bg-background px-4 py-6 lg:px-6 lg:py-7">
         <div className="mx-auto max-w-[1440px] rounded-lg border border-app-border bg-surface p-8 text-sm text-text-muted">
           Yetkilendirme bilgileri yükleniyor...
         </div>
@@ -409,7 +409,7 @@ export default function AuthorizationPage() {
 
   if (!currentUser?.IsSuperAdmin) {
     return (
-      <main className="min-h-[calc(100vh-5rem)] bg-background px-5 py-8 lg:px-8 lg:py-10">
+      <main className="min-h-[calc(100vh-4rem)] bg-background px-4 py-6 lg:px-6 lg:py-7">
         <div
           role="alert"
           className="mx-auto max-w-[900px] rounded-lg border border-red-200 bg-red-50 px-6 py-5 text-danger"
@@ -428,14 +428,14 @@ export default function AuthorizationPage() {
   }
 
   return (
-    <main className="min-h-[calc(100vh-5rem)] bg-background px-5 py-8 lg:px-8 lg:py-10">
+    <main className="min-h-[calc(100vh-4rem)] bg-background px-4 py-6 lg:px-6 lg:py-7">
       <section className="mx-auto max-w-[1440px]">
         <div className="mb-8">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">
             Sistem yönetimi
           </p>
 
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground lg:text-4xl">
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground lg:text-3xl">
             Rol ve Profil Yönetimi
           </h1>
 

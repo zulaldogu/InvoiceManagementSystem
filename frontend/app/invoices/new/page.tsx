@@ -260,7 +260,7 @@ export default function NewInvoicePage() {
   }
 
   return (
-    <main className="min-h-full bg-background px-5 py-8 sm:px-8 lg:px-10">
+    <main className="min-h-full bg-background px-4 py-6 sm:px-6 lg:px-7">
       <div className="mx-auto max-w-[1550px]">
         <Link
           className="inline-flex items-center gap-2 text-sm font-semibold text-primary transition hover:text-primary/75"
@@ -276,7 +276,7 @@ export default function NewInvoicePage() {
               Fatura yönetimi
             </p>
 
-            <h1 className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+            <h1 className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-3xl">
               Yeni Fatura Oluştur
             </h1>
 

@@ -472,24 +472,24 @@ export default function AppShell({
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-[280px] flex-col border-r border-app-border bg-surface transition-transform duration-200 lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 flex w-[252px] flex-col border-r border-app-border bg-surface transition-transform duration-200 lg:translate-x-0 ${
           isMobileMenuOpen
             ? "translate-x-0"
             : "-translate-x-full"
         }`}
       >
-        <div className="flex h-20 items-center justify-between border-b border-app-border px-6">
+        <div className="flex h-16 items-center justify-between border-b border-app-border px-5">
           <Link
             href="/"
             onClick={closeMobileMenu}
             className="flex min-w-0 items-center gap-3"
           >
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary font-bold text-white">
+            <span className="flex h-9 w-9 text-sm shrink-0 items-center justify-center rounded-md bg-primary font-bold text-white">
               FY
             </span>
 
             <span className="min-w-0">
-              <span className="block truncate text-base font-semibold text-primary-dark">
+              <span className="block truncate text-sm font-semibold text-primary-dark">
                 Fatura Yönetimi
               </span>
               <span className="block truncate text-xs text-text-muted">
@@ -509,11 +509,11 @@ export default function AppShell({
         </div>
 
         {canCreateInvoice && (
-          <div className="px-5 pt-6">
+          <div className="px-4 pt-4">
             <Link
               href="/invoices/new"
               onClick={closeMobileMenu}
-              className="flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark"
+              className="flex w-full items-center justify-center gap-2 rounded-md bg-primary px-3 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark"
             >
               <span className="text-xl leading-none">
                 +
@@ -523,7 +523,7 @@ export default function AppShell({
           </div>
         )}
 
-        <nav className="flex-1 space-y-1 overflow-y-auto px-4 py-6">
+        <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
           <p className="mb-3 px-3 text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
             Ana Menü
           </p>
@@ -539,7 +539,7 @@ export default function AppShell({
                 key={item.href}
                 href={item.href}
                 onClick={closeMobileMenu}
-                className={`relative flex items-center gap-3 rounded-md px-4 py-3 text-sm font-medium transition ${
+                className={`relative flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition ${
                   isActive
                     ? "bg-primary-soft text-primary-dark"
                     : "text-text-muted hover:bg-surface-muted hover:text-primary-dark"
@@ -557,8 +557,8 @@ export default function AppShell({
         </nav>
       </aside>
 
-      <div className="min-h-screen lg:pl-[280px]">
-        <header className="sticky top-0 z-20 flex h-20 items-center justify-between border-b border-app-border bg-surface/95 px-5 backdrop-blur lg:px-8">
+      <div className="min-h-screen lg:pl-[252px]">
+        <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-app-border bg-surface/95 px-5 backdrop-blur lg:px-6">
           <div className="flex items-center gap-3">
             <button
               type="button"
