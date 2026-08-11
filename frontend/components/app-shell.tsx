@@ -4,13 +4,15 @@ import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import AccountSettingsPanel from "@/components/account-settings-panel";
+import { AuthorizationProvider } from "@/components/authorization-context";
 
+import AccountSettingsPanel from "@/components/account-settings-panel";
 import {
   apiRequest,
   clearAccessToken,
   getAccessToken,
 } from "@/lib/api";
+import type { CurrentAuthorization } from "@/types/authorization";
 import type { CurrentUser } from "@/types/auth";
 import type { User } from "@/types/user";
 
@@ -24,32 +26,44 @@ type IconName =
   | "products"
   | "invoices"
   | "companies"
-  | "users";
+  | "users"
+  | "authorization";
 
-const navigation: {
+type NavigationItem = {
   label: string;
   href: string;
   icon: IconName;
-}[] = [
+  requiredRoles?: string[];
+};
+
+const navigation: NavigationItem[] = [
   {
     label: "Genel Bakış",
     href: "/",
     icon: "dashboard",
+    requiredRoles: [
+      "VIEW_CUSTOMERS",
+      "MANAGE_PRODUCTS",
+      "VIEW_INVOICES",
+    ],
   },
   {
     label: "Faturalar",
     href: "/invoices",
     icon: "invoices",
+    requiredRoles: ["VIEW_INVOICES"],
   },
   {
     label: "Müşteriler",
     href: "/customers",
     icon: "customers",
+    requiredRoles: ["VIEW_CUSTOMERS"],
   },
   {
     label: "Ürün ve Hizmetler",
     href: "/products",
     icon: "products",
+    requiredRoles: ["MANAGE_PRODUCTS"],
   },
 ];
 
@@ -99,10 +113,16 @@ function NavigationIcon({ name }: { name: IconName }) {
         <path d="M13 15h2" />
       </>
     ),
-        users: (
+    users: (
       <>
         <circle cx="12" cy="7" r="4" />
         <path d="M4 21a8 8 0 0 1 16 0" />
+      </>
+    ),
+    authorization: (
+      <>
+        <path d="M12 3 4 7v5c0 5 3.4 8.7 8 10 4.6-1.3 8-5 8-10V7z" />
+        <path d="m9 12 2 2 4-4" />
       </>
     ),
   };
@@ -163,20 +183,118 @@ function isActiveRoute(pathname: string, href: string) {
     return pathname === "/";
   }
 
-  return pathname === href || pathname.startsWith(`${href}/`);
+  return (
+    pathname === href ||
+    pathname.startsWith(`${href}/`)
+  );
 }
 
-export default function AppShell({ children }: AppShellProps) {
+function hasRole(
+  user: CurrentUser,
+  authorization: CurrentAuthorization,
+  roleName: string,
+) {
+  return (
+    user.IsSuperAdmin ||
+    authorization.Roles.includes("*") ||
+    authorization.Roles.includes(roleName)
+  );
+}
+
+function hasAllRoles(
+  user: CurrentUser,
+  authorization: CurrentAuthorization,
+  roleNames: string[],
+) {
+  return roleNames.every((roleName) =>
+    hasRole(user, authorization, roleName),
+  );
+}
+
+function canAccessPath(
+  pathname: string,
+  user: CurrentUser,
+  authorization: CurrentAuthorization,
+) {
+  if (user.IsSuperAdmin) {
+    return true;
+  }
+
+  if (pathname === "/") {
+    return hasAllRoles(user, authorization, [
+      "VIEW_CUSTOMERS",
+      "MANAGE_PRODUCTS",
+      "VIEW_INVOICES",
+    ]);
+  }
+
+  if (pathname === "/invoices/new") {
+    return hasRole(
+      user,
+      authorization,
+      "MANAGE_INVOICES",
+    );
+  }
+
+  if (
+    pathname.startsWith("/invoices/") &&
+    pathname.endsWith("/edit")
+  ) {
+    return hasRole(
+      user,
+      authorization,
+      "MANAGE_INVOICES",
+    );
+  }
+
+  if (pathname.startsWith("/invoices")) {
+    return hasRole(
+      user,
+      authorization,
+      "VIEW_INVOICES",
+    );
+  }
+
+  if (pathname.startsWith("/customers")) {
+    return hasRole(
+      user,
+      authorization,
+      "VIEW_CUSTOMERS",
+    );
+  }
+
+  if (pathname.startsWith("/products")) {
+    return hasRole(
+      user,
+      authorization,
+      "MANAGE_PRODUCTS",
+    );
+  }
+
+  if (pathname.startsWith("/authorization")) {
+    return false;
+  }
+
+  return true;
+}
+
+export default function AppShell({
+  children,
+}: AppShellProps) {
   const pathname = usePathname();
   const router = useRouter();
 
   const [currentUser, setCurrentUser] =
     useState<CurrentUser | null>(null);
+  const [authorization, setAuthorization] =
+    useState<CurrentAuthorization | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] =
     useState(false);
-  const [isAccountSettingsOpen, setIsAccountSettingsOpen] =
-    useState(false);
+  const [
+    isAccountSettingsOpen,
+    setIsAccountSettingsOpen,
+  ] = useState(false);
 
   const isLoginPage = pathname === "/login";
 
@@ -194,13 +312,19 @@ export default function AppShell({ children }: AppShellProps) {
 
     let isActive = true;
 
-    apiRequest<CurrentUser>("/auth/me")
-      .then((user) => {
+    Promise.all([
+      apiRequest<CurrentUser>("/auth/me"),
+      apiRequest<CurrentAuthorization>(
+        "/auth/me/authorization",
+      ),
+    ])
+      .then(([user, authorizationData]) => {
         if (!isActive) {
           return;
         }
 
         setCurrentUser(user);
+        setAuthorization(authorizationData);
         setIsLoading(false);
       })
       .catch(() => {
@@ -217,9 +341,33 @@ export default function AppShell({ children }: AppShellProps) {
     };
   }, [isLoginPage, router]);
 
-   function handleLogout() {
+  useEffect(() => {
+    if (
+      !currentUser ||
+      !authorization ||
+      isLoginPage ||
+      canAccessPath(
+        pathname,
+        currentUser,
+        authorization,
+      )
+    ) {
+      return;
+    }
+
+    router.replace("/companies");
+  }, [
+    authorization,
+    currentUser,
+    isLoginPage,
+    pathname,
+    router,
+  ]);
+
+  function handleLogout() {
     clearAccessToken();
     setCurrentUser(null);
+    setAuthorization(null);
     setIsMobileMenuOpen(false);
     setIsAccountSettingsOpen(false);
     router.replace("/login");
@@ -238,22 +386,38 @@ export default function AppShell({ children }: AppShellProps) {
     return <>{children}</>;
   }
 
-  if (isLoading || !currentUser) {
+  if (
+    isLoading ||
+    !currentUser ||
+    !authorization
+  ) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-background text-foreground">
         <div className="text-center">
           <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-primary-soft border-t-primary" />
 
           <p className="mt-4 text-sm text-text-muted">
-            Oturum doğrulanıyor...
+            Oturum ve yetkiler doğrulanıyor...
           </p>
         </div>
       </main>
     );
   }
 
-     const visibleNavigation = [
-    ...navigation,
+  const visibleNavigation = [
+    ...navigation.filter((item) => {
+      if (currentUser.IsSuperAdmin) {
+        return true;
+      }
+
+      return item.requiredRoles
+        ? hasAllRoles(
+            currentUser,
+            authorization,
+            item.requiredRoles,
+          )
+        : true;
+    }),
     {
       label: currentUser.IsSuperAdmin
         ? "Firmalar"
@@ -268,17 +432,36 @@ export default function AppShell({ children }: AppShellProps) {
       href: "/users",
       icon: "users" as const,
     },
+    ...(currentUser.IsSuperAdmin
+      ? [
+          {
+            label: "Rol ve Profiller",
+            href: "/authorization",
+            icon: "authorization" as const,
+          },
+        ]
+      : []),
   ];
+
+  const canCreateInvoice = hasRole(
+    currentUser,
+    authorization,
+    "MANAGE_INVOICES",
+  );
+
   return (
     <div className="min-h-screen bg-background text-foreground">
-            {isAccountSettingsOpen && (
+      {isAccountSettingsOpen && (
         <AccountSettingsPanel
           currentUser={currentUser}
-          onClose={() => setIsAccountSettingsOpen(false)}
+          onClose={() =>
+            setIsAccountSettingsOpen(false)
+          }
           onUpdated={handleUserUpdated}
           onLogout={handleLogout}
         />
       )}
+
       {isMobileMenuOpen && (
         <button
           type="button"
@@ -309,7 +492,6 @@ export default function AppShell({ children }: AppShellProps) {
               <span className="block truncate text-base font-semibold text-primary-dark">
                 Fatura Yönetimi
               </span>
-
               <span className="block truncate text-xs text-text-muted">
                 Kurumsal Panel
               </span>
@@ -326,24 +508,31 @@ export default function AppShell({ children }: AppShellProps) {
           </button>
         </div>
 
-        <div className="px-5 pt-6">
-          <Link
-            href="/invoices/new"
-            onClick={closeMobileMenu}
-            className="flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark"
-          >
-            <span className="text-xl leading-none">+</span>
-            Yeni Fatura Oluştur
-          </Link>
-        </div>
+        {canCreateInvoice && (
+          <div className="px-5 pt-6">
+            <Link
+              href="/invoices/new"
+              onClick={closeMobileMenu}
+              className="flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark"
+            >
+              <span className="text-xl leading-none">
+                +
+              </span>
+              Yeni Fatura Oluştur
+            </Link>
+          </div>
+        )}
 
-        <nav className="flex-1 space-y-1 px-4 py-6">
+        <nav className="flex-1 space-y-1 overflow-y-auto px-4 py-6">
           <p className="mb-3 px-3 text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
             Ana Menü
           </p>
 
-            {visibleNavigation.map((item) => {
-              const isActive = isActiveRoute(pathname, item.href);
+          {visibleNavigation.map((item) => {
+            const isActive = isActiveRoute(
+              pathname,
+              item.href,
+            );
 
             return (
               <Link
@@ -375,7 +564,9 @@ export default function AppShell({ children }: AppShellProps) {
               type="button"
               aria-label="Menüyü aç"
               aria-expanded={isMobileMenuOpen}
-              onClick={() => setIsMobileMenuOpen(true)}
+              onClick={() =>
+                setIsMobileMenuOpen(true)
+              }
               className="rounded-md p-2 text-text-muted transition hover:bg-surface-muted hover:text-primary lg:hidden"
             >
               <MenuIcon />
@@ -386,7 +577,7 @@ export default function AppShell({ children }: AppShellProps) {
             </p>
           </div>
 
-                    <button
+          <button
             type="button"
             aria-label="Hesap ayarlarını aç"
             aria-expanded={isAccountSettingsOpen}
@@ -409,7 +600,9 @@ export default function AppShell({ children }: AppShellProps) {
             </div>
 
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-soft text-sm font-semibold text-primary-dark">
-              {currentUser.UserName.charAt(0).toUpperCase()}
+              {currentUser.UserName
+                .charAt(0)
+                .toUpperCase()}
             </span>
 
             <span
@@ -421,8 +614,12 @@ export default function AppShell({ children }: AppShellProps) {
           </button>
         </header>
 
-        <div>{children}</div>
-      </div>
+        <AuthorizationProvider
+          currentUser={currentUser}
+          authorization={authorization}
+        >
+          <div>{children}</div>
+        </AuthorizationProvider>      </div>
     </div>
   );
 }

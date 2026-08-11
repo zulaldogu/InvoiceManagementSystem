@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { apiRequest } from "@/lib/api";
 import type { Customer } from "@/types/customer";
 import type { Invoice } from "@/types/invoice";
+import { useAuthorization } from "@/components/authorization-context";
 
 function formatCurrency(value: number | string | null) {
   const numericValue = Number(value ?? 0);
@@ -42,6 +43,10 @@ function formatDate(value: string | null) {
 }
 
 export default function InvoiceDetailPage() {
+  const { hasRole } = useAuthorization();
+  const canManageInvoices = hasRole(
+    "MANAGE_INVOICES",
+  );
   const params = useParams<{ invoiceId: string }>();
   const invoiceId = params.invoiceId;
 
@@ -152,21 +157,23 @@ export default function InvoiceDetailPage() {
                 </p>
               </div>
 
-              <div className="flex flex-wrap gap-3">
-                <Link
-                  className="inline-flex h-12 items-center justify-center rounded-lg border border-primary bg-white px-6 font-bold text-primary transition hover:bg-primary/5"
-                  href={`/invoices/${invoice.InvoiceId}/edit`}
-                >
-                  Faturayı Düzenle
-                </Link>
+                            {canManageInvoices && (
+                <div className="flex flex-wrap gap-3">
+                  <Link
+                    className="inline-flex h-12 items-center justify-center rounded-lg border border-primary bg-white px-6 font-bold text-primary transition hover:bg-primary/5"
+                    href={`/invoices/${invoice.InvoiceId}/edit`}
+                  >
+                    Faturayı Düzenle
+                  </Link>
 
-                <Link
-                  className="inline-flex h-12 items-center justify-center rounded-lg bg-primary px-6 font-bold text-white shadow-sm transition hover:bg-primary-dark"
-                  href="/invoices/new"
-                >
-                  + Yeni Fatura Oluştur
-                </Link>
-              </div>
+                  <Link
+                    className="inline-flex h-12 items-center justify-center rounded-lg bg-primary px-6 font-bold text-white shadow-sm transition hover:bg-primary-dark"
+                    href="/invoices/new"
+                  >
+                    + Yeni Fatura Oluştur
+                  </Link>
+                </div>
+              )}
             </header>
 
             <section className="mt-7 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
