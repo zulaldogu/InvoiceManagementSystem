@@ -6,6 +6,10 @@ from sqlalchemy.orm import Session
 
 import models
 import schemas
+from auth import (
+    get_user_profile_names,
+    get_user_role_names,
+)
 from database import get_db
 from security import (
     authenticate_user,
@@ -63,3 +67,29 @@ def get_me(
     ],
 ):
     return current_user
+
+
+@router.get(
+    "/me/authorization",
+    response_model=schemas.CurrentAuthorizationResponse,
+)
+def get_my_authorization(
+    current_user: Annotated[
+        models.User,
+        Depends(get_current_user),
+    ],
+    db: Session = Depends(get_db),
+):
+    return schemas.CurrentAuthorizationResponse(
+        UserId=current_user.UserId,
+        CompanyId=current_user.CompanyId,
+        IsSuperAdmin=current_user.IsSuperAdmin,
+        Profiles=get_user_profile_names(
+            current_user,
+            db,
+        ),
+        Roles=get_user_role_names(
+            current_user,
+            db,
+        ),
+    )

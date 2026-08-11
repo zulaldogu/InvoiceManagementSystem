@@ -8,6 +8,86 @@ from database import get_db
 from security import get_current_user
 
 
+def get_user_profile_names(
+    current_user: models.User,
+    db: Session,
+) -> list[str]:
+    if current_user.IsSuperAdmin:
+        return ["SUPER_ADMIN"]
+
+    if current_user.CompanyId is None:
+        return []
+
+    rows = (
+        db.query(models.Profile.ProfileName)
+        .join(
+            models.UserProfile,
+            models.Profile.ProfileId
+            == models.UserProfile.ProfileId,
+        )
+        .filter(
+            models.UserProfile.UserId
+            == current_user.UserId,
+            models.UserProfile.CompanyId
+            == current_user.CompanyId,
+            models.Profile.CompanyId
+            == current_user.CompanyId,
+        )
+        .distinct()
+        .order_by(models.Profile.ProfileName)
+        .all()
+    )
+
+    return [profile_name for (profile_name,) in rows]
+
+
+def get_user_role_names(
+    current_user: models.User,
+    db: Session,
+) -> list[str]:
+    if current_user.IsSuperAdmin:
+        return ["*"]
+
+    if current_user.CompanyId is None:
+        return []
+
+    rows = (
+        db.query(models.Role.RoleName)
+        .join(
+            models.ProfileRole,
+            models.Role.RoleId
+            == models.ProfileRole.RoleId,
+        )
+        .join(
+            models.Profile,
+            models.Profile.ProfileId
+            == models.ProfileRole.ProfileId,
+        )
+        .join(
+            models.UserProfile,
+            models.Profile.ProfileId
+            == models.UserProfile.ProfileId,
+        )
+        .filter(
+            models.UserProfile.UserId
+            == current_user.UserId,
+            models.UserProfile.CompanyId
+            == current_user.CompanyId,
+            models.Profile.CompanyId
+            == current_user.CompanyId,
+            models.ProfileRole.CompanyId
+            == current_user.CompanyId,
+            models.Role.CompanyId
+            == current_user.CompanyId,
+        )
+        .distinct()
+        .order_by(models.Role.RoleName)
+        .all()
+    )
+
+    return [role_name for (role_name,) in rows]
+
+
 def user_has_role(
     current_user: models.User,
     role_name: str,
@@ -23,18 +103,30 @@ def user_has_role(
         db.query(models.Role)
         .join(
             models.ProfileRole,
-            models.Role.RoleId == models.ProfileRole.RoleId,
+            models.Role.RoleId
+            == models.ProfileRole.RoleId,
+        )
+        .join(
+            models.Profile,
+            models.Profile.ProfileId
+            == models.ProfileRole.ProfileId,
         )
         .join(
             models.UserProfile,
-            models.ProfileRole.ProfileId
+            models.Profile.ProfileId
             == models.UserProfile.ProfileId,
         )
         .filter(
-            models.UserProfile.UserId == current_user.UserId,
-            models.UserProfile.CompanyId == current_user.CompanyId,
-            models.ProfileRole.CompanyId == current_user.CompanyId,
-            models.Role.CompanyId == current_user.CompanyId,
+            models.UserProfile.UserId
+            == current_user.UserId,
+            models.UserProfile.CompanyId
+            == current_user.CompanyId,
+            models.Profile.CompanyId
+            == current_user.CompanyId,
+            models.ProfileRole.CompanyId
+            == current_user.CompanyId,
+            models.Role.CompanyId
+            == current_user.CompanyId,
             models.Role.RoleName == role_name,
         )
         .first()

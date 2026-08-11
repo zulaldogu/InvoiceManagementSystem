@@ -140,82 +140,104 @@ class ProductResponse(ProductBase):
 
 
 class RoleBase(BaseModel):
-    RoleName: str
-    Description: Optional[str] = None
-    UserId: Optional[int] = None
+    RoleName: str = Field(min_length=1, max_length=100)
+    Description: Optional[str] = Field(
+        default=None,
+        max_length=255,
+    )
 
 
 class RoleCreate(RoleBase):
-    pass
+    CompanyId: int = Field(gt=0)
 
 
 class RoleUpdate(BaseModel):
-    RoleName: Optional[str] = None
-    Description: Optional[str] = None
-    UserId: Optional[int] = None
+    RoleName: Optional[str] = Field(
+        default=None,
+        min_length=1,
+        max_length=100,
+    )
+    Description: Optional[str] = Field(
+        default=None,
+        max_length=255,
+    )
 
 
 class RoleResponse(RoleBase):
     RoleId: int
+    CompanyId: int
+    UserId: Optional[int] = None
     RecordDate: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class ProfileBase(BaseModel):
-    ProfileName: str
-    Description: Optional[str] = None
-    UserId: Optional[int] = None
+    ProfileName: str = Field(min_length=1, max_length=100)
+    Description: Optional[str] = Field(
+        default=None,
+        max_length=255,
+    )
 
 
 class ProfileCreate(ProfileBase):
-    pass
+    CompanyId: int = Field(gt=0)
 
 
 class ProfileUpdate(BaseModel):
-    ProfileName: Optional[str] = None
-    Description: Optional[str] = None
-    UserId: Optional[int] = None
+    ProfileName: Optional[str] = Field(
+        default=None,
+        min_length=1,
+        max_length=100,
+    )
+    Description: Optional[str] = Field(
+        default=None,
+        max_length=255,
+    )
 
 
 class ProfileResponse(ProfileBase):
     ProfileId: int
-    RecordDate: Optional[datetime] = None
-
-    model_config = ConfigDict(from_attributes=True)
-
-
-class ProfileRoleBase(BaseModel):
-    ProfileId: int
-    RoleId: int
+    CompanyId: int
     UserId: Optional[int] = None
+    RecordDate: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
 
 
-class ProfileRoleCreate(ProfileRoleBase):
-    pass
+class ProfileRoleCreate(BaseModel):
+    ProfileId: int = Field(gt=0)
+    RoleId: int = Field(gt=0)
 
 
-class ProfileRoleResponse(ProfileRoleBase):
+class ProfileRoleResponse(ProfileRoleCreate):
     ProfileRoleId: int
+    CompanyId: int
+    UserId: Optional[int] = None
     RecordDate: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
 
 
-class UserProfileBase(BaseModel):
-    UserId: int
-    ProfileId: int
+class UserProfileCreate(BaseModel):
+    UserId: int = Field(gt=0)
+    ProfileId: int = Field(gt=0)
 
 
-class UserProfileCreate(UserProfileBase):
-    pass
-
-
-class UserProfileResponse(UserProfileBase):
+class UserProfileResponse(UserProfileCreate):
     UserProfileId: int
+    CompanyId: int
     RecordDate: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class CurrentAuthorizationResponse(BaseModel):
+    UserId: int
+    CompanyId: Optional[int] = None
+    IsSuperAdmin: bool
+    Profiles: List[str] = Field(default_factory=list)
+    Roles: List[str] = Field(default_factory=list)
 
 
 class InvoiceLineCreate(BaseModel):
