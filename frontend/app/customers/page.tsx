@@ -5,6 +5,7 @@ import Link from "next/link";
 import CustomerFormModal from "@/components/customer-form-modal";
 import { apiRequest } from "@/lib/api";
 import type { Customer } from "@/types/customer";
+import { useAuthorization } from "@/components/authorization-context";
 
 function SearchIcon() {
   return (
@@ -24,6 +25,10 @@ function SearchIcon() {
 }
 
 export default function CustomersPage() {
+  const { hasRole } = useAuthorization();
+  const canManageCustomers = hasRole(
+    "MANAGE_CUSTOMERS",
+  );
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -195,14 +200,18 @@ export default function CustomersPage() {
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={openCreateForm}
-            className="inline-flex items-center justify-center gap-2 self-start rounded-md bg-primary px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark sm:self-auto"
-          >
-            <span className="text-xl leading-none">+</span>
-            Yeni Müşteri Ekle
-          </button>
+          {canManageCustomers && (
+            <button
+              type="button"
+              onClick={openCreateForm}
+              className="inline-flex items-center justify-center gap-2 self-start rounded-md bg-primary px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark sm:self-auto"
+            >
+              <span className="text-xl leading-none">
+                +
+              </span>
+              Yeni Müşteri Ekle
+            </button>
+          )}
         </div>
 
         <div className="mb-6 rounded-lg border border-app-border bg-surface p-4 shadow-[0_4px_12px_rgba(15,23,42,0.03)]">
@@ -360,30 +369,36 @@ export default function CustomersPage() {
 className="inline-flex h-10 min-w-20 items-center justify-center rounded-md border border-app-border px-3 text-sm font-semibold text-primary transition hover:border-primary hover:bg-primary-soft">
   Detay
 </Link>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                openEditForm(customer)
-                              }
-className="inline-flex h-10 min-w-20 items-center justify-center rounded-md border border-app-border px-3 text-sm font-semibold text-primary transition hover:border-primary hover:bg-primary-soft"                            >
-                              Düzenle
-                            </button>
+                                                        {canManageCustomers && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    openEditForm(customer)
+                                  }
+                                  className="inline-flex h-10 min-w-20 items-center justify-center rounded-md border border-app-border px-3 text-sm font-semibold text-primary transition hover:border-primary hover:bg-primary-soft"
+                                >
+                                  Düzenle
+                                </button>
 
-                            <button
-                              type="button"
-                              disabled={
-                                deletingCustomerId ===
-                                customer.CustomerId
-                              }
-                              onClick={() =>
-                                handleDelete(customer)
-                              }
-className="inline-flex h-10 min-w-20 items-center justify-center rounded-md border border-app-border px-3 text-sm font-semibold text-danger transition hover:border-danger hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"                            >
-                              {deletingCustomerId ===
-                              customer.CustomerId
-                                ? "Siliniyor..."
-                                : "Sil"}
-                            </button>
+                                <button
+                                  type="button"
+                                  disabled={
+                                    deletingCustomerId ===
+                                    customer.CustomerId
+                                  }
+                                  onClick={() =>
+                                    handleDelete(customer)
+                                  }
+                                  className="inline-flex h-10 min-w-20 items-center justify-center rounded-md border border-app-border px-3 text-sm font-semibold text-danger transition hover:border-danger hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                  {deletingCustomerId ===
+                                  customer.CustomerId
+                                    ? "Siliniyor..."
+                                    : "Sil"}
+                                </button>
+                              </>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -396,7 +411,7 @@ className="inline-flex h-10 min-w-20 items-center justify-center rounded-md bord
         )}
       </section>
 
-      {isFormOpen && (
+      {isFormOpen && canManageCustomers && (
         <CustomerFormModal
           key={editingCustomer?.CustomerId ?? "new-customer"}
           customer={editingCustomer}

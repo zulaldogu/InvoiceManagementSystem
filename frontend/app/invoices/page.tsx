@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { apiRequest } from "@/lib/api";
 import type { Customer } from "@/types/customer";
 import type { Invoice } from "@/types/invoice";
+import { useAuthorization } from "@/components/authorization-context";
 
 function formatCurrency(value: string | null) {
   return new Intl.NumberFormat("tr-TR", {
@@ -50,6 +51,14 @@ function SearchIcon() {
 }
 
 export default function InvoicesPage() {
+  const { hasRole } = useAuthorization();
+
+  const canManageInvoices = hasRole(
+    "MANAGE_INVOICES",
+  );
+  const canViewCustomers = hasRole(
+    "VIEW_CUSTOMERS",
+  );
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -62,15 +71,18 @@ export default function InvoicesPage() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  useEffect(() => {
+    useEffect(() => {
     let isActive = true;
 
     async function loadInvoicePage() {
       try {
-        const [invoiceData, customerData] = await Promise.all([
-          apiRequest<Invoice[]>("/invoices/"),
-          apiRequest<Customer[]>("/customers/"),
-        ]);
+        const [invoiceData, customerData] =
+          await Promise.all([
+            apiRequest<Invoice[]>("/invoices/"),
+            canViewCustomers
+              ? apiRequest<Customer[]>("/customers/")
+              : Promise.resolve([] as Customer[]),
+          ]);
 
         if (!isActive) {
           return;
@@ -100,7 +112,7 @@ export default function InvoicesPage() {
     return () => {
       isActive = false;
     };
-  }, []);
+  }, [canViewCustomers]);
 
   async function handleDelete(invoice: Invoice) {
     const confirmed = window.confirm(
@@ -193,13 +205,17 @@ export default function InvoicesPage() {
             </p>
           </div>
 
-          <Link
-            href="/invoices/new"
-            className="inline-flex items-center justify-center gap-2 self-start rounded-md bg-primary px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark sm:self-auto"
-          >
-            <span className="text-xl leading-none">+</span>
-            Yeni Fatura Oluştur
-          </Link>
+          {canManageInvoices && (
+            <Link
+              href="/invoices/new"
+              className="inline-flex items-center justify-center gap-2 self-start rounded-md bg-primary px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark sm:self-auto"
+            >
+              <span className="text-xl leading-none">
+                +
+              </span>
+              Yeni Fatura Oluştur
+            </Link>
+          )}
         </div>
 
         <div className="mb-6 rounded-lg border border-app-border bg-surface p-4 shadow-[0_4px_12px_rgba(15,23,42,0.03)]">
@@ -375,29 +391,33 @@ export default function InvoicesPage() {
                             >
                               Detay
                             </Link>
-                            <Link
-  href={`/invoices/${invoice.InvoiceId}/edit`}
-  className="inline-flex h-10 min-w-20 items-center justify-center rounded-md border border-app-border px-3 text-sm font-semibold text-primary transition hover:border-primary hover:bg-primary-soft"
->
-  Düzenle
-</Link>
+                              {canManageInvoices && (
+                              <>
+                                <Link
+                                  href={`/invoices/${invoice.InvoiceId}/edit`}
+                                  className="inline-flex h-10 min-w-20 items-center justify-center rounded-md border border-app-border px-3 text-sm font-semibold text-primary transition hover:border-primary hover:bg-primary-soft"
+                                >
+                                  Düzenle
+                                </Link>
 
-                            <button
-                              type="button"
-                              disabled={
-                                deletingInvoiceId ===
-                                invoice.InvoiceId
-                              }
-                              onClick={() =>
-                                handleDelete(invoice)
-                              }
-                              className="inline-flex h-10 min-w-20 items-center justify-center rounded-md border border-app-border px-3 text-sm font-semibold text-danger transition hover:border-danger hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                              {deletingInvoiceId ===
-                              invoice.InvoiceId
-                                ? "Siliniyor..."
-                                : "Sil"}
-                            </button>
+                                <button
+                                  type="button"
+                                  disabled={
+                                    deletingInvoiceId ===
+                                    invoice.InvoiceId
+                                  }
+                                  onClick={() =>
+                                    handleDelete(invoice)
+                                  }
+                                  className="inline-flex h-10 min-w-20 items-center justify-center rounded-md border border-app-border px-3 text-sm font-semibold text-danger transition hover:border-danger hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                  {deletingInvoiceId ===
+                                  invoice.InvoiceId
+                                    ? "Siliniyor..."
+                                    : "Sil"}
+                                </button>
+                              </>
+                            )}
                           </div>
                         </td>
                       </tr>

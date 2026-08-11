@@ -7,6 +7,7 @@ import { apiRequest } from "@/lib/api";
 import type { Customer } from "@/types/customer";
 import type { Invoice } from "@/types/invoice";
 import type { Product } from "@/types/product";
+import { useAuthorization } from "@/components/authorization-context";
 
 type StatisticIconName =
   | "customers"
@@ -99,6 +100,10 @@ function StatisticIcon({ name }: { name: StatisticIconName }) {
 }
 
 export default function Home() {
+  const { hasRole } = useAuthorization();
+  const canManageInvoices = hasRole(
+    "MANAGE_INVOICES",
+  );
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -228,13 +233,17 @@ export default function Home() {
             </p>
           </div>
 
-          <Link
-            href="/invoices/new"
-            className="inline-flex items-center justify-center gap-2 self-start rounded-md bg-primary px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark sm:self-auto"
-          >
-            <span className="text-xl leading-none">+</span>
-            Yeni Fatura Oluştur
-          </Link>
+          {canManageInvoices && (
+            <Link
+              href="/invoices/new"
+              className="inline-flex items-center justify-center gap-2 self-start rounded-md bg-primary px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark sm:self-auto"
+            >
+              <span className="text-xl leading-none">
+                +
+              </span>
+              Yeni Fatura Oluştur
+            </Link>
+          )}
         </div>
 
         {error && (
@@ -422,13 +431,19 @@ export default function Home() {
                 </p>
 
                 <div className="mt-6 space-y-3">
-                  <Link
-                    href="/invoices/new"
-                    className="flex items-center justify-between rounded-md bg-primary px-4 py-3 text-sm font-semibold text-white transition hover:bg-primary-dark"
-                  >
-                    <span>+ Yeni Fatura Oluştur</span>
-                    <span aria-hidden="true">→</span>
-                  </Link>
+                  {canManageInvoices && (
+                    <Link
+                      href="/invoices/new"
+                      className="flex items-center justify-between rounded-md bg-primary px-4 py-3 text-sm font-semibold text-white transition hover:bg-primary-dark"
+                    >
+                      <span>
+                        + Yeni Fatura Oluştur
+                      </span>
+                      <span aria-hidden="true">
+                        →
+                      </span>
+                    </Link>
+                  )}
 
                   <Link
                     href="/customers"
