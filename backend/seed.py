@@ -3,6 +3,7 @@ from decimal import Decimal
 
 import models
 from database import SessionLocal
+from demo_accounts import seed_company_demo_accounts
 from security import hash_password, verify_password
 
 
@@ -142,6 +143,10 @@ def seed_demo_data():
                         UserId=user.UserId,
                     )
                 )
+        seed_company_demo_accounts(
+            db,
+            user.UserId,
+        )
 
         product = db.query(models.Product).filter(
             models.Product.ProductCode == "DEMO-001",

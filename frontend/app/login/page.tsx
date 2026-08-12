@@ -17,6 +17,24 @@ const features = [
   "Merkezi müşteri, ürün ve fatura yönetimi",
 ];
 
+const demoAccounts = [
+  {
+    title: "Süper Yönetici",
+    username: "admin",
+    password: "DemoAdmin123!",
+  },
+  {
+    title: "Firma Yöneticisi",
+    username: "companymanager",
+    password: "CompanyManager123!",
+  },
+  {
+    title: "Sınırlı Görüntüleme",
+    username: "companyviewer",
+    password: "CompanyViewer123!",
+  },
+] as const;
+
 export default function LoginPage() {
   const router = useRouter();
 
@@ -108,7 +126,7 @@ export default function LoginPage() {
             Fatura süreçlerinizi tek bir panel üzerinden yönetin.
           </h1>
 
-          <p className="mt-6 max-w-lg text-base leading-7 text-text-muted">
+          <p className="mt-3 max-w-lg text-base leading-7 text-text-muted">
             Müşteri, ürün ve fatura işlemlerine güvenli kullanıcı
             doğrulaması ve firma bazlı veri izolasyonuyla erişin.
           </p>
@@ -134,7 +152,7 @@ export default function LoginPage() {
         </p>
       </section>
 
-      <section className="flex min-h-screen items-center justify-center px-5 py-10 sm:px-8 lg:px-12">
+      <section className="flex min-h-screen items-center justify-center px-5 py-6 sm:px-8 lg:px-10 lg:py-5">
         <div className="w-full max-w-lg">
           <div className="mb-8 flex items-center gap-3 lg:hidden">
             <span className="flex h-11 w-11 items-center justify-center rounded-md bg-primary font-bold text-white">
@@ -152,28 +170,28 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-app-border bg-surface p-6 shadow-[0_12px_35px_rgba(15,23,42,0.07)] sm:p-8">
+          <div className="rounded-xl border border-app-border bg-surface p-5 shadow-[0_12px_35px_rgba(15,23,42,0.07)] sm:p-6">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
               Yönetim paneli
             </p>
 
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground">
+            <h2 className="mt-2 text-3xl font-semibold tracking-tight text-foreground">
               Hesabınıza giriş yapın
             </h2>
 
-            <p className="mt-3 text-sm leading-6 text-text-muted">
+            <p className="mt-2 text-sm leading-5 text-text-muted">
               Firma hesabınıza erişmek için kullanıcı bilgilerinizi
               girin.
             </p>
 
             <form
-              className="mt-8 space-y-5"
+              className="mt-5 space-y-4"
               onSubmit={handleSubmit}
             >
               <div>
                 <label
                   htmlFor="username"
-                  className="mb-2 block text-sm font-semibold text-foreground"
+                  className="mb-1.5 block text-sm font-semibold text-foreground"
                 >
                   Kullanıcı adı
                 </label>
@@ -188,7 +206,7 @@ export default function LoginPage() {
                   onChange={(event) =>
                     setUsername(event.target.value)
                   }
-                  className="w-full rounded-md border border-app-border bg-surface px-4 py-3 text-foreground outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary-soft"
+                  className="w-full rounded-md border border-app-border bg-surface px-4 py-2.5 text-foreground outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary-soft"
                   placeholder="Kullanıcı adınızı girin"
                 />
               </div>
@@ -196,7 +214,7 @@ export default function LoginPage() {
               <div>
                 <label
                   htmlFor="password"
-                  className="mb-2 block text-sm font-semibold text-foreground"
+                  className="mb-1.5 block text-sm font-semibold text-foreground"
                 >
                   Parola
                 </label>
@@ -211,7 +229,7 @@ export default function LoginPage() {
                   onChange={(event) =>
                     setPassword(event.target.value)
                   }
-                  className="w-full rounded-md border border-app-border bg-surface px-4 py-3 text-foreground outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary-soft"
+                  className="w-full rounded-md border border-app-border bg-surface px-4 py-2.5 text-foreground outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary-soft"
                   placeholder="Parolanızı girin"
                 />
               </div>
@@ -219,7 +237,7 @@ export default function LoginPage() {
               {error && (
                 <div
                   role="alert"
-                  className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-danger"
+                  className="rounded-md border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-danger"
                 >
                   {error}
                 </div>
@@ -228,7 +246,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full rounded-md bg-primary px-4 py-3 font-semibold text-white shadow-sm transition hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60"
+                className="w-full rounded-md bg-primary px-4 py-2.5 font-semibold text-white shadow-sm transition hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isSubmitting
                   ? "Giriş yapılıyor..."
@@ -236,30 +254,53 @@ export default function LoginPage() {
               </button>
             </form>
 
-            <div className="mt-7 rounded-md border border-app-border bg-surface-muted p-4 text-sm text-text-muted">
-              <p className="font-semibold text-foreground">
-                Demo hesabı
-              </p>
+            <div className="mt-4 rounded-md border border-app-border bg-surface-muted p-3 text-sm text-text-muted">
+  <p className="font-semibold text-foreground">
+    Demo hesapları
+  </p>
 
-              <div className="mt-2 grid gap-1 sm:grid-cols-2">
-                <p>
-                  Kullanıcı adı:{" "}
-                  <strong className="text-foreground">
-                    admin
-                  </strong>
-                </p>
+  <p className="mt-1 text-xs leading-5">
+    Bilgileri forma aktarmak için bir hesaba tıklayın.
+  </p>
 
-                <p>
-                  Parola:{" "}
-                  <strong className="text-foreground">
-                    DemoAdmin123!
-                  </strong>
-                </p>
-              </div>
-            </div>
+  <div className="mt-2 space-y-1.5">
+    {demoAccounts.map((account) => (
+      <button
+        key={account.username}
+        type="button"
+        onClick={() => {
+          setUsername(account.username);
+          setPassword(account.password);
+          setError(null);
+        }}
+        className="grid w-full gap-1 rounded-md border border-app-border bg-surface px-3 py-2 text-left transition hover:border-primary hover:bg-primary-soft sm:grid-cols-[1fr_auto]"
+      >
+        <span>
+          <strong className="block text-foreground">
+            {account.title}
+          </strong>
+
+          <span className="text-xs">
+            Kullanıcı adı: {account.username}
+          </span>
+        </span>
+
+        <span className="text-xs sm:text-right">
+          <span className="block text-text-muted">
+            Parola
+          </span>
+
+          <strong className="text-foreground">
+            {account.password}
+          </strong>
+        </span>
+      </button>
+    ))}
+  </div>
+</div>
           </div>
 
-          <p className="mt-6 text-center text-xs leading-5 text-text-muted">
+          <p className="mt-3 text-center text-xs leading-5 text-text-muted">
             Giriş yaparak yalnızca bağlı olduğunuz firma kapsamındaki
             verilere erişirsiniz.
           </p>
