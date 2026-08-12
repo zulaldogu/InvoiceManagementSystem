@@ -7,7 +7,6 @@ import models
 import schemas
 from auth import require_role
 from database import get_db
-from security import get_current_user
 
 
 router = APIRouter(
@@ -69,7 +68,7 @@ def create_product(
 def get_products(
     current_user: Annotated[
         models.User,
-        Depends(get_current_user),
+        Depends(require_role("MANAGE_PRODUCTS")),
     ],
     db: Session = Depends(get_db),
 ):
@@ -90,7 +89,7 @@ def get_product(
     product_id: int,
     current_user: Annotated[
         models.User,
-        Depends(get_current_user),
+        Depends(require_role("MANAGE_PRODUCTS")),
     ],
     db: Session = Depends(get_db),
 ):
