@@ -412,7 +412,7 @@ export default function NewInvoicePage() {
               ) : null}
 
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[1450px] border-collapse text-left">
+                <table className="w-full min-w-[1120px] border-collapse text-left">
                   <thead className="bg-primary-soft">
                     <tr className="text-xs font-bold uppercase tracking-[0.08em] text-text-muted">
                       <th className="px-5 py-4">No</th>
@@ -434,7 +434,7 @@ export default function NewInvoicePage() {
                       <th className="px-3 py-4 text-right">
                         Satır Toplamı
                       </th>
-                      <th className="px-5 py-4 text-right">
+                      <th className="sticky right-0 z-20 border-l border-app-border bg-primary-soft px-4 py-4 text-right">
                         İşlem
                       </th>
                     </tr>
@@ -452,11 +452,11 @@ export default function NewInvoicePage() {
                           className="border-t border-app-border align-middle"
                           key={line.ClientId}
                         >
-                          <td className="px-5 py-5 text-sm font-bold text-text-muted">
+                          <td className="sticky right-0 z-10 border-l border-app-border bg-surface px-5 py-5 text-sm font-bold text-text-muted">
                             {index + 1}
                           </td>
 
-                          <td className="min-w-[290px] px-3 py-5">
+                          <td className="sticky right-0 z-10 border-l border-app-border bg-surface min-w-[230px] px-3 py-5">
                             <select
                               className="h-11 w-full rounded-lg border border-app-border bg-white px-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
                               onChange={(event) =>
@@ -485,7 +485,7 @@ export default function NewInvoicePage() {
                             </select>
                           </td>
 
-                          <td className="w-28 px-3 py-5">
+                          <td className="sticky right-0 z-10 border-l border-app-border bg-surface w-28 px-3 py-5">
                             <input
                               className="h-11 w-full rounded-lg border border-app-border bg-white px-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
                               min={1}
@@ -503,7 +503,7 @@ export default function NewInvoicePage() {
                             />
                           </td>
 
-                          <td className="w-36 px-3 py-5">
+                          <td className="sticky right-0 z-10 border-l border-app-border bg-surface w-36 px-3 py-5">
                             <input
                               className="h-11 w-full rounded-lg border border-app-border bg-white px-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
                               min={0}
@@ -521,7 +521,7 @@ export default function NewInvoicePage() {
                             />
                           </td>
 
-                          <td className="w-28 px-3 py-5">
+                          <td className="sticky right-0 z-10 border-l border-app-border bg-surface w-28 px-3 py-5">
                             <input
                               className="h-11 w-full rounded-lg border border-app-border bg-white px-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
                               max={100}
@@ -540,7 +540,7 @@ export default function NewInvoicePage() {
                             />
                           </td>
 
-                          <td className="w-28 px-3 py-5">
+                          <td className="sticky right-0 z-10 border-l border-app-border bg-surface w-28 px-3 py-5">
                             <input
                               className="h-11 w-full rounded-lg border border-app-border bg-white px-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
                               max={100}
@@ -559,13 +559,13 @@ export default function NewInvoicePage() {
                             />
                           </td>
 
-                          <td className="px-3 py-5 text-right font-semibold text-foreground">
+                          <td className="sticky right-0 z-10 border-l border-app-border bg-surface px-3 py-5 text-right font-semibold text-foreground">
                             {formatCurrency(
                               amounts.Subtotal,
                             )}
                           </td>
 
-                          <td className="px-3 py-5 text-right">
+                          <td className="sticky right-0 z-10 border-l border-app-border bg-surface px-3 py-5 text-right">
                             <p className="font-semibold text-foreground">
                               {formatCurrency(taxTotal)}
                             </p>
@@ -581,13 +581,13 @@ export default function NewInvoicePage() {
                             </p>
                           </td>
 
-                          <td className="px-3 py-5 text-right font-bold text-primary">
+                          <td className="sticky right-0 z-10 border-l border-app-border bg-surface px-3 py-5 text-right font-bold text-primary">
                             {formatCurrency(
                               amounts.LineTotal,
                             )}
                           </td>
 
-                          <td className="px-5 py-5 text-right">
+                          <td className="sticky right-0 z-10 border-l border-app-border bg-surface px-5 py-5 text-right">
                             <button
                               className="rounded-lg border border-red-200 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
                               disabled={lines.length === 1}

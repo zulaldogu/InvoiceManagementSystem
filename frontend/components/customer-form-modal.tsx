@@ -1,7 +1,7 @@
 "use client";
 
 import type { FormEvent } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { apiRequest } from "@/lib/api";
 import type {
@@ -34,6 +34,20 @@ export default function CustomerFormModal({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+  function handleKeyDown(event: KeyboardEvent) {
+    if (event.key === "Escape" && !isSubmitting) {
+      onClose();
+    }
+  }
+
+  window.addEventListener("keydown", handleKeyDown);
+
+  return () => {
+    window.removeEventListener("keydown", handleKeyDown);
+  };
+}, [isSubmitting, onClose]);
 
   async function handleSubmit(
     event: FormEvent<HTMLFormElement>,
