@@ -364,6 +364,28 @@ export default function AppShell({
     router,
   ]);
 
+  useEffect(() => {
+  if (!isMobileMenuOpen) {
+    return;
+  }
+
+  const previousOverflow = document.body.style.overflow;
+
+  function handleKeyDown(event: KeyboardEvent) {
+    if (event.key === "Escape") {
+      setIsMobileMenuOpen(false);
+    }
+  }
+
+  document.body.style.overflow = "hidden";
+  window.addEventListener("keydown", handleKeyDown);
+
+  return () => {
+    document.body.style.overflow = previousOverflow;
+    window.removeEventListener("keydown", handleKeyDown);
+  };
+}, [isMobileMenuOpen]);
+
   function handleLogout() {
     clearAccessToken();
     setCurrentUser(null);

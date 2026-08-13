@@ -644,7 +644,7 @@ export default function EditInvoicePage() {
               </div>
 
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[1450px] text-left">
+                <table className="w-full min-w-[1120px] text-left">
                   <thead className="bg-primary-soft text-xs uppercase tracking-[0.08em] text-text-muted">
                     <tr>
                       <th className="px-5 py-4">Ürün / Hizmet</th>
@@ -661,7 +661,7 @@ export default function EditInvoicePage() {
                       <th className="px-3 py-4 text-right">
                         Satır Toplamı
                       </th>
-                      <th className="px-5 py-4 text-right">
+                      <th className="sticky right-0 z-20 border-l border-app-border bg-primary-soft px-4 py-4 text-right">
                         İşlemler
                       </th>
                     </tr>
@@ -673,7 +673,7 @@ export default function EditInvoicePage() {
 
                       return (
                         <tr key={line.InvoiceLineId}>
-                          <td className="min-w-[290px] px-5 py-5">
+                          <td className="sticky right-0 z-10 border-l border-app-border bg-surface min-w-[230px] px-5 py-5">
                             <select
                               className={inputClass}
                               onChange={(event) =>
@@ -701,7 +701,7 @@ export default function EditInvoicePage() {
                             </select>
                           </td>
 
-                          <td className="w-28 px-3 py-5">
+                          <td className="sticky right-0 z-10 border-l border-app-border bg-surface w-28 px-3 py-5">
                             <input
                               className={inputClass}
                               min={1}
@@ -718,7 +718,7 @@ export default function EditInvoicePage() {
                             />
                           </td>
 
-                          <td className="w-36 px-3 py-5">
+                          <td className="sticky right-0 z-10 border-l border-app-border bg-surface w-36 px-3 py-5">
                             <input
                               className={inputClass}
                               min={0}
@@ -735,7 +735,7 @@ export default function EditInvoicePage() {
                             />
                           </td>
 
-                          <td className="w-28 px-3 py-5">
+                          <td className="sticky right-0 z-10 border-l border-app-border bg-surface w-28 px-3 py-5">
                             <input
                               className={inputClass}
                               max={100}
@@ -753,7 +753,7 @@ export default function EditInvoicePage() {
                             />
                           </td>
 
-                          <td className="w-28 px-3 py-5">
+                          <td className="sticky right-0 z-10 border-l border-app-border bg-surface w-28 px-3 py-5">
                             <input
                               className={inputClass}
                               max={100}
@@ -771,11 +771,11 @@ export default function EditInvoicePage() {
                             />
                           </td>
 
-                          <td className="px-3 py-5 text-right font-semibold">
+                          <td className="sticky right-0 z-10 border-l border-app-border bg-surface px-3 py-5 text-right font-semibold">
                             {formatCurrency(amounts.Subtotal)}
                           </td>
 
-                          <td className="px-3 py-5 text-right">
+                          <td className="sticky right-0 z-10 border-l border-app-border bg-surface px-3 py-5 text-right">
                             <p className="font-semibold">
                               {formatCurrency(
                                 amounts.VatAmount +
@@ -792,11 +792,11 @@ export default function EditInvoicePage() {
                             </p>
                           </td>
 
-                          <td className="px-3 py-5 text-right font-bold text-primary">
+                          <td className="sticky right-0 z-10 border-l border-app-border bg-surface px-3 py-5 text-right font-bold text-primary">
                             {formatCurrency(amounts.LineTotal)}
                           </td>
 
-                          <td className="px-5 py-5">
+                          <td className="sticky right-0 z-10 border-l border-app-border bg-surface px-5 py-5">
                             <div className="flex justify-end gap-2">
                               <button
                                 className="h-10 rounded-md border border-app-border px-4 text-sm font-semibold text-primary hover:bg-primary-soft disabled:opacity-50"
