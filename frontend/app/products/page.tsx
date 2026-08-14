@@ -24,6 +24,16 @@ function formatVatRate(value: string | null) {
   })}`;
 }
 
+type ProductSearchField = "name" | "code";
+
+const productSearchPlaceholders: Record<
+  ProductSearchField,
+  string
+> = {
+  name: "Ürün veya hizmet adını girin...",
+  code: "Ürün kodunu girin...",
+};
+
 function SearchIcon() {
   return (
     <svg
@@ -43,6 +53,8 @@ function SearchIcon() {
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [searchField, setSearchField] =
+    useState<ProductSearchField>("name");
   const [searchQuery, setSearchQuery] = useState("");
 
   const [editingProduct, setEditingProduct] =
@@ -175,25 +187,23 @@ export default function ProductsPage() {
   }
 
   const normalizedQuery = searchQuery
-    .trim()
-    .toLocaleLowerCase("tr-TR");
+  .trim()
+  .toLocaleLowerCase("tr-TR");
 
   const filteredProducts = products.filter((product) => {
     if (!normalizedQuery) {
       return true;
     }
 
-    const productCode = product.ProductCode ?? "";
+  const searchableValue =
+    searchField === "name"
+      ? product.ProductName
+      : product.ProductCode ?? "";
 
-    return (
-      product.ProductName.toLocaleLowerCase("tr-TR").includes(
-        normalizedQuery,
-      ) ||
-      productCode.toLocaleLowerCase("tr-TR").includes(
-        normalizedQuery,
-      )
-    );
-  });
+  return searchableValue
+    .toLocaleLowerCase("tr-TR")
+    .includes(normalizedQuery);
+});
 
   return (
     <main className="min-h-[calc(100vh-4rem)] bg-background px-4 py-6 lg:px-6 lg:py-7">
@@ -221,30 +231,64 @@ export default function ProductsPage() {
         </div>
 
         <div className="mb-6 rounded-lg border border-app-border bg-surface p-4 shadow-[0_4px_12px_rgba(15,23,42,0.03)]">
-          <label
-            htmlFor="product-search"
-            className="mb-2 block text-xs font-semibold uppercase tracking-[0.1em] text-text-muted"
-          >
-            Ürün veya hizmet ara
-          </label>
+  <p className="mb-3 text-xs font-semibold uppercase tracking-[0.1em] text-text-muted">
+    Ürün veya hizmet ara
+  </p>
 
-          <div className="relative">
-            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-muted">
-              <SearchIcon />
-            </span>
+  <div className="grid gap-3 md:grid-cols-[220px_minmax(0,1fr)]">
+    <div>
+      <label
+        htmlFor="product-search-field"
+        className="mb-1.5 block text-sm font-medium text-foreground"
+      >
+        Arama ölçütü
+      </label>
 
-            <input
-              id="product-search"
-              type="search"
-              value={searchQuery}
-              onChange={(event) =>
-                setSearchQuery(event.target.value)
-              }
-              placeholder="Ürün kodu veya ürün/hizmet adına göre ara..."
-              className="w-full rounded-md border border-app-border bg-surface px-4 py-3 pl-11 text-sm text-foreground outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary-soft"
-            />
-          </div>
-        </div>
+      <select
+        id="product-search-field"
+        value={searchField}
+        onChange={(event) => {
+          setSearchField(
+            event.target.value as ProductSearchField,
+          );
+          setSearchQuery("");
+        }}
+        className="w-full rounded-md border border-app-border bg-surface px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary-soft"
+      >
+        <option value="name">Ürün/hizmet adı</option>
+        <option value="code">Ürün kodu</option>
+      </select>
+    </div>
+
+    <div>
+      <label
+        htmlFor="product-search"
+        className="mb-1.5 block text-sm font-medium text-foreground"
+      >
+        Aranacak değer
+      </label>
+
+      <div className="relative">
+        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-muted">
+          <SearchIcon />
+        </span>
+
+        <input
+          id="product-search"
+          type="search"
+          value={searchQuery}
+          onChange={(event) =>
+            setSearchQuery(event.target.value)
+          }
+          placeholder={
+            productSearchPlaceholders[searchField]
+          }
+          className="w-full rounded-md border border-app-border bg-surface px-4 py-3 pl-11 text-sm text-foreground outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary-soft"
+        />
+      </div>
+    </div>
+  </div>
+</div>
 
         {notice && (
           <div className="mb-6 rounded-lg border border-green-200 bg-green-50 px-5 py-4 text-sm text-success">

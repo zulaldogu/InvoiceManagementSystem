@@ -7,6 +7,17 @@ import { apiRequest } from "@/lib/api";
 import type { Customer } from "@/types/customer";
 import { useAuthorization } from "@/components/authorization-context";
 
+type CustomerSearchField = "title" | "taxNumber" | "email";
+
+const customerSearchPlaceholders: Record<
+  CustomerSearchField,
+  string
+> = {
+  title: "Müşteri unvanını girin...",
+  taxNumber: "Vergi numarasını girin...",
+  email: "E-posta adresini girin...",
+};
+
 function SearchIcon() {
   return (
     <svg
@@ -30,6 +41,8 @@ export default function CustomersPage() {
     "MANAGE_CUSTOMERS",
   );
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [searchField, setSearchField] =
+    useState<CustomerSearchField>("title");
   const [searchQuery, setSearchQuery] = useState("");
 
   const [editingCustomer, setEditingCustomer] =
@@ -162,29 +175,32 @@ export default function CustomersPage() {
   }
 
   const normalizedQuery = searchQuery
-    .trim()
-    .toLocaleLowerCase("tr-TR");
+  .trim()
+  .toLocaleLowerCase("tr-TR");
 
-  const filteredCustomers = customers.filter((customer) => {
-    if (!normalizedQuery) {
-      return true;
-    }
+const filteredCustomers = customers.filter((customer) => {
+  if (!normalizedQuery) {
+    return true;
+  }
 
-    const taxNumber = customer.TaxNumber ?? "";
-    const email = customer.EMail ?? "";
+  let searchableValue = "";
 
-    return (
-      customer.Title.toLocaleLowerCase("tr-TR").includes(
-        normalizedQuery,
-      ) ||
-      taxNumber.toLocaleLowerCase("tr-TR").includes(
-        normalizedQuery,
-      ) ||
-      email.toLocaleLowerCase("tr-TR").includes(
-        normalizedQuery,
-      )
-    );
-  });
+  switch (searchField) {
+    case "title":
+      searchableValue = customer.Title;
+      break;
+    case "taxNumber":
+      searchableValue = customer.TaxNumber ?? "";
+      break;
+    case "email":
+      searchableValue = customer.EMail ?? "";
+      break;
+  }
+
+  return searchableValue
+    .toLocaleLowerCase("tr-TR")
+    .includes(normalizedQuery);
+});
 
   return (
     <main className="min-h-[calc(100vh-4rem)] bg-background px-4 py-6 lg:px-6 lg:py-7">
@@ -215,30 +231,65 @@ export default function CustomersPage() {
         </div>
 
         <div className="mb-6 rounded-lg border border-app-border bg-surface p-4 shadow-[0_4px_12px_rgba(15,23,42,0.03)]">
-          <label
-            htmlFor="customer-search"
-            className="mb-2 block text-xs font-semibold uppercase tracking-[0.1em] text-text-muted"
-          >
-            Müşteri ara
-          </label>
+  <p className="mb-3 text-xs font-semibold uppercase tracking-[0.1em] text-text-muted">
+    Müşteri ara
+  </p>
 
-          <div className="relative">
-            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-muted">
-              <SearchIcon />
-            </span>
+  <div className="grid gap-3 md:grid-cols-[220px_minmax(0,1fr)]">
+    <div>
+      <label
+        htmlFor="customer-search-field"
+        className="mb-1.5 block text-sm font-medium text-foreground"
+      >
+        Arama ölçütü
+      </label>
 
-            <input
-              id="customer-search"
-              type="search"
-              value={searchQuery}
-              onChange={(event) =>
-                setSearchQuery(event.target.value)
-              }
-              placeholder="Unvan, vergi numarası veya e-posta ile ara..."
-              className="w-full rounded-md border border-app-border bg-surface px-4 py-3 pl-11 text-sm text-foreground outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary-soft"
-            />
-          </div>
-        </div>
+      <select
+        id="customer-search-field"
+        value={searchField}
+        onChange={(event) => {
+          setSearchField(
+            event.target.value as CustomerSearchField,
+          );
+          setSearchQuery("");
+        }}
+        className="w-full rounded-md border border-app-border bg-surface px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary-soft"
+      >
+        <option value="title">Müşteri unvanı</option>
+        <option value="taxNumber">Vergi numarası</option>
+        <option value="email">E-posta</option>
+      </select>
+    </div>
+
+    <div>
+      <label
+        htmlFor="customer-search"
+        className="mb-1.5 block text-sm font-medium text-foreground"
+      >
+        Aranacak değer
+      </label>
+
+      <div className="relative">
+        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-muted">
+          <SearchIcon />
+        </span>
+
+        <input
+          id="customer-search"
+          type="search"
+          value={searchQuery}
+          onChange={(event) =>
+            setSearchQuery(event.target.value)
+          }
+          placeholder={
+            customerSearchPlaceholders[searchField]
+          }
+          className="w-full rounded-md border border-app-border bg-surface px-4 py-3 pl-11 text-sm text-foreground outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary-soft"
+        />
+      </div>
+    </div>
+  </div>
+</div>
 
         {notice && (
           <div className="mb-6 rounded-lg border border-green-200 bg-green-50 px-5 py-4 text-sm text-success">
