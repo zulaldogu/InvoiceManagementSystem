@@ -33,6 +33,19 @@ function formatDate(value: string | null) {
   }).format(date);
 }
 
+type InvoiceSearchField =
+  | "invoiceNumber"
+  | "customer"
+  | "date";
+
+const invoiceSearchPlaceholders: Record<
+  Exclude<InvoiceSearchField, "date">,
+  string
+> = {
+  invoiceNumber: "Fatura numarasını girin...",
+  customer: "Müşteri unvanını girin...",
+};
+
 function SearchIcon() {
   return (
     <svg
@@ -61,6 +74,8 @@ export default function InvoicesPage() {
   );
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [searchField, setSearchField] =
+    useState<InvoiceSearchField>("invoiceNumber");
   const [searchQuery, setSearchQuery] = useState("");
 
   const [isLoading, setIsLoading] = useState(true);
@@ -164,32 +179,33 @@ export default function InvoicesPage() {
   );
 
   const normalizedQuery = searchQuery
-    .trim()
-    .toLocaleLowerCase("tr-TR");
+  .trim()
+  .toLocaleLowerCase("tr-TR");
 
   const filteredInvoices = invoices.filter((invoice) => {
-    if (!normalizedQuery) {
+    if (!searchQuery.trim()) {
       return true;
     }
 
-    const customerName =
-      customerNames.get(invoice.CustomerId) ?? "";
+  if (searchField === "date") {
+    const invoiceDate =
+      invoice.InvoiceDate?.slice(0, 10) ?? "";
 
-    const formattedDate = formatDate(invoice.InvoiceDate);
+    return invoiceDate === searchQuery;
+  }
 
-    return (
-      invoice.InvoiceNumber.toLocaleLowerCase("tr-TR").includes(
-        normalizedQuery,
-      ) ||
-      customerName.toLocaleLowerCase("tr-TR").includes(
-        normalizedQuery,
-      ) ||
-      String(invoice.CustomerId).includes(normalizedQuery) ||
-      formattedDate
-        .toLocaleLowerCase("tr-TR")
-        .includes(normalizedQuery)
-    );
-  });
+  const customerName =
+    customerNames.get(invoice.CustomerId) ?? "";
+
+  const searchableValue =
+    searchField === "invoiceNumber"
+      ? invoice.InvoiceNumber
+      : customerName;
+
+  return searchableValue
+    .toLocaleLowerCase("tr-TR")
+    .includes(normalizedQuery);
+});
 
   return (
     <main className="min-h-[calc(100vh-4rem)] bg-background px-4 py-6 lg:px-6 lg:py-7">
@@ -219,30 +235,81 @@ export default function InvoicesPage() {
         </div>
 
         <div className="mb-6 rounded-lg border border-app-border bg-surface p-4 shadow-[0_4px_12px_rgba(15,23,42,0.03)]">
-          <label
-            htmlFor="invoice-search"
-            className="mb-2 block text-xs font-semibold uppercase tracking-[0.1em] text-text-muted"
-          >
-            Fatura ara
-          </label>
+  <p className="mb-3 text-xs font-semibold uppercase tracking-[0.1em] text-text-muted">
+    Fatura ara
+  </p>
 
-          <div className="relative">
-            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-muted">
-              <SearchIcon />
-            </span>
+  <div className="grid gap-3 md:grid-cols-[220px_minmax(0,1fr)]">
+    <div>
+      <label
+        htmlFor="invoice-search-field"
+        className="mb-1.5 block text-sm font-medium text-foreground"
+      >
+        Arama ölçütü
+      </label>
 
-            <input
-              id="invoice-search"
-              type="search"
-              value={searchQuery}
-              onChange={(event) =>
-                setSearchQuery(event.target.value)
-              }
-              placeholder="Fatura numarası, müşteri veya tarih ile ara..."
-              className="w-full rounded-md border border-app-border bg-surface px-4 py-3 pl-11 text-sm text-foreground outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary-soft"
-            />
-          </div>
+      <select
+        id="invoice-search-field"
+        value={searchField}
+        onChange={(event) => {
+          setSearchField(
+            event.target.value as InvoiceSearchField,
+          );
+          setSearchQuery("");
+        }}
+        className="w-full rounded-md border border-app-border bg-surface px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary-soft"
+      >
+        <option value="invoiceNumber">
+          Fatura numarası
+        </option>
+        <option value="customer">Müşteri</option>
+        <option value="date">Fatura tarihi</option>
+      </select>
+    </div>
+
+    <div>
+      <label
+        htmlFor="invoice-search"
+        className="mb-1.5 block text-sm font-medium text-foreground"
+      >
+        {searchField === "date"
+          ? "Fatura tarihi"
+          : "Aranacak değer"}
+      </label>
+
+      {searchField === "date" ? (
+        <input
+          id="invoice-search"
+          type="date"
+          value={searchQuery}
+          onChange={(event) =>
+            setSearchQuery(event.target.value)
+          }
+          className="w-full rounded-md border border-app-border bg-surface px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary-soft"
+        />
+      ) : (
+        <div className="relative">
+          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-muted">
+            <SearchIcon />
+          </span>
+
+          <input
+            id="invoice-search"
+            type="search"
+            value={searchQuery}
+            onChange={(event) =>
+              setSearchQuery(event.target.value)
+            }
+            placeholder={
+              invoiceSearchPlaceholders[searchField]
+            }
+            className="w-full rounded-md border border-app-border bg-surface px-4 py-3 pl-11 text-sm text-foreground outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary-soft"
+          />
         </div>
+      )}
+    </div>
+  </div>
+</div>
 
         {notice ? (
           <div className="mb-6 rounded-lg border border-green-200 bg-green-50 px-5 py-4 text-sm font-medium text-success">
