@@ -25,6 +25,65 @@ type ModalState =
     }
   | null;
 
+  const ROLE_LABELS: Record<string, string> = {
+  MANAGE_CUSTOMERS: "Müşterileri Yönet",
+  MANAGE_INVOICES: "Faturaları Yönet",
+  MANAGE_PRODUCTS: "Ürün ve Hizmetleri Yönet",
+  VIEW_CUSTOMERS: "Müşterileri Görüntüle",
+  VIEW_INVOICES: "Faturaları Görüntüle",
+};
+
+const ROLE_DESCRIPTIONS: Record<string, string> = {
+  MANAGE_CUSTOMERS:
+    "Müşteri kayıtlarını oluşturma, düzenleme ve silme yetkisi.",
+  MANAGE_INVOICES:
+    "Faturaları oluşturma, düzenleme ve silme yetkisi.",
+  MANAGE_PRODUCTS:
+    "Ürün ve hizmet kayıtlarını görüntüleme ve yönetme yetkisi.",
+  VIEW_CUSTOMERS:
+    "Müşteri kayıtlarını görüntüleme yetkisi.",
+  VIEW_INVOICES:
+    "Fatura kayıtlarını görüntüleme yetkisi.",
+};
+
+const PROFILE_LABELS: Record<string, string> = {
+  SUPER_ADMIN: "Süper Yönetici",
+  COMPANY_MANAGER: "Firma Yöneticisi",
+  COMPANY_VIEWER: "Sınırlı Görüntüleme",
+  "Demo Administrator": "Demo Yöneticisi",
+};
+
+const PROFILE_DESCRIPTIONS: Record<string, string> = {
+  SUPER_ADMIN: "Sistemdeki tüm firma ve yönetim işlemlerine erişebilir.",
+  COMPANY_MANAGER: "Firmaya ait müşteri, ürün ve fatura işlemlerini yönetebilir.",
+  COMPANY_VIEWER: "Müşteri ve faturaları sınırlı olarak görüntüleyebilir.",
+  "Demo Administrator": "Demo firmasının yönetim profilidir.",
+};
+
+function getRoleLabel(roleName: string): string {
+  return ROLE_LABELS[roleName] ?? roleName;
+}
+
+function getRoleDescription(role: Role): string {
+  return (
+    ROLE_DESCRIPTIONS[role.RoleName] ??
+    role.Description ??
+    "Açıklama bulunmuyor."
+  );
+}
+
+function getProfileLabel(profileName: string): string {
+  return PROFILE_LABELS[profileName] ?? profileName;
+}
+
+function getProfileDescription(profile: Profile): string {
+  return (
+    PROFILE_DESCRIPTIONS[profile.ProfileName] ??
+    profile.Description ??
+    "Açıklama bulunmuyor."
+  );
+}
+
 export default function AuthorizationPage() {
   const [currentUser, setCurrentUser] =
     useState<CurrentUser | null>(null);
@@ -564,12 +623,14 @@ export default function AuthorizationPage() {
                   >
                     <div>
                       <p className="font-semibold text-foreground">
-                        {role.RoleName}
-                      </p>
-                      <p className="mt-1 text-sm text-text-muted">
-                        {role.Description ??
-                          "Açıklama bulunmuyor."}
-                      </p>
+  {getRoleLabel(role.RoleName)}
+</p>
+<p className="mt-1 text-xs font-medium text-primary">
+  {role.RoleName}
+</p>
+<p className="mt-1 text-sm text-text-muted">
+  {getRoleDescription(role)}
+</p>
                     </div>
 
                     <div className="flex gap-2">
@@ -662,12 +723,14 @@ export default function AuthorizationPage() {
                           className="text-left"
                         >
                           <p className="font-semibold text-foreground">
-                            {profile.ProfileName}
-                          </p>
-                          <p className="mt-1 text-sm text-text-muted">
-                            {profile.Description ??
-                              "Açıklama bulunmuyor."}
-                          </p>
+  {getProfileLabel(profile.ProfileName)}
+</p>
+<p className="mt-1 text-xs font-medium text-primary">
+  {profile.ProfileName}
+</p>
+<p className="mt-1 text-sm text-text-muted">
+  {getProfileDescription(profile)}
+</p>
                         </button>
 
                         <div className="flex gap-2">
@@ -715,7 +778,7 @@ export default function AuthorizationPage() {
 
             <p className="mt-1 text-sm text-text-muted">
               {selectedProfile
-                ? `${selectedProfile.ProfileName} profili için rol ve kullanıcı bağlantılarını yönetin.`
+              ? `${getProfileLabel(selectedProfile.ProfileName)} profili için rol ve kullanıcı bağlantılarını yönetin.`
                 : "Atamaları yönetmek için bir profil seçin."}
             </p>
           </header>
@@ -766,7 +829,7 @@ export default function AuthorizationPage() {
                           } disabled:opacity-50`}
                         >
                           <span className="font-semibold">
-                            {role.RoleName}
+                          {getRoleLabel(role.RoleName)}
                           </span>
 
                           <span>

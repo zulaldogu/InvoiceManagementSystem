@@ -7,6 +7,22 @@ import { apiRequest } from "@/lib/api";
 import type { CurrentUser } from "@/types/auth";
 import type { Company } from "@/types/company";
 
+type CompanySearchField =
+  | "code"
+  | "name"
+  | "taxNumber"
+  | "email";
+
+const companySearchPlaceholders: Record<
+  CompanySearchField,
+  string
+> = {
+  code: "Firma kodunu girin...",
+  name: "Firma unvanını girin...",
+  taxNumber: "Vergi numarasını girin...",
+  email: "E-posta adresini girin...",
+};
+
 function SearchIcon() {
   return (
     <svg
@@ -39,6 +55,8 @@ export default function CompaniesPage() {
   const [currentCompany, setCurrentCompany] =
     useState<Company | null>(null);
 
+  const [searchField, setSearchField] =
+    useState<CompanySearchField>("name");
   const [searchQuery, setSearchQuery] = useState("");
   const [editingCompany, setEditingCompany] =
     useState<Company | null>(null);
@@ -211,29 +229,35 @@ export default function CompaniesPage() {
   }
 
   const normalizedQuery = searchQuery
-    .trim()
-    .toLocaleLowerCase("tr-TR");
+  .trim()
+  .toLocaleLowerCase("tr-TR");
 
   const filteredCompanies = companies.filter((company) => {
-    if (!normalizedQuery) {
-      return true;
-    }
+  if (!normalizedQuery) {
+    return true;
+  }
 
-    return (
-      company.CompanyCode.toLocaleLowerCase(
-        "tr-TR",
-      ).includes(normalizedQuery) ||
-      company.CompanyName.toLocaleLowerCase(
-        "tr-TR",
-      ).includes(normalizedQuery) ||
-      (company.TaxNumber ?? "")
-        .toLocaleLowerCase("tr-TR")
-        .includes(normalizedQuery) ||
-      (company.EMail ?? "")
-        .toLocaleLowerCase("tr-TR")
-        .includes(normalizedQuery)
-    );
-  });
+  let searchableValue = "";
+
+  switch (searchField) {
+    case "code":
+      searchableValue = company.CompanyCode;
+      break;
+    case "name":
+      searchableValue = company.CompanyName;
+      break;
+    case "taxNumber":
+      searchableValue = company.TaxNumber ?? "";
+      break;
+    case "email":
+      searchableValue = company.EMail ?? "";
+      break;
+  }
+
+  return searchableValue
+    .toLocaleLowerCase("tr-TR")
+    .includes(normalizedQuery);
+});
 
   const activeCompanyCount = companies.filter(
     (company) => company.IsActive,
@@ -455,22 +479,61 @@ export default function CompaniesPage() {
             Firma ara
           </label>
 
-          <div className="relative">
-            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-muted">
-              <SearchIcon />
-            </span>
+          <div className="grid gap-3 md:grid-cols-[220px_minmax(0,1fr)]">
+  <div>
+    <label
+      htmlFor="company-search-field"
+      className="mb-1.5 block text-sm font-medium text-foreground"
+    >
+      Arama ölçütü
+    </label>
 
-            <input
-              id="company-search"
-              type="search"
-              value={searchQuery}
-              onChange={(event) =>
-                setSearchQuery(event.target.value)
-              }
-              placeholder="Firma kodu, unvan, vergi numarası veya e-posta ile ara..."
-              className="w-full rounded-md border border-app-border bg-surface px-4 py-3 pl-11 text-sm text-foreground outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary-soft"
-            />
-          </div>
+    <select
+      id="company-search-field"
+      value={searchField}
+      onChange={(event) => {
+        setSearchField(
+          event.target.value as CompanySearchField,
+        );
+        setSearchQuery("");
+      }}
+      className="w-full rounded-md border border-app-border bg-surface px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary-soft"
+    >
+      <option value="name">Firma unvanı</option>
+      <option value="code">Firma kodu</option>
+      <option value="taxNumber">Vergi numarası</option>
+      <option value="email">E-posta</option>
+    </select>
+  </div>
+
+  <div>
+    <label
+      htmlFor="company-search"
+      className="mb-1.5 block text-sm font-medium text-foreground"
+    >
+      Arama metni
+    </label>
+
+    <div className="relative">
+      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-muted">
+        <SearchIcon />
+      </span>
+
+      <input
+        id="company-search"
+        type="search"
+        value={searchQuery}
+        onChange={(event) =>
+          setSearchQuery(event.target.value)
+        }
+        placeholder={
+          companySearchPlaceholders[searchField]
+        }
+        className="w-full rounded-md border border-app-border bg-surface px-4 py-3 pl-11 text-sm text-foreground outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary-soft"
+      />
+    </div>
+  </div>
+</div>
         </div>
 
         {notice && (

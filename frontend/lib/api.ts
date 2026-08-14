@@ -90,6 +90,20 @@ async function getErrorMessage(response: Response): Promise<string> {
   return `API isteği ${response.status} durum koduyla başarısız oldu.`;
 }
 
+async function fetchApi(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+): Promise<Response> {
+  try {
+    return await fetch(input, init);
+  } catch {
+    throw new Error(
+      "Sunucuya bağlanılamadı. Lütfen bağlantınızı kontrol edip tekrar deneyin.",
+    );
+  }
+}
+
+
 export async function login(
   username: string,
   password: string,
@@ -99,8 +113,8 @@ export async function login(
   formData.set("username", username);
   formData.set("password", password);
 
-  const response = await fetch(`${API_BASE_URL}/auth/login`, {
-    method: "POST",
+  const response = await fetchApi(`${API_BASE_URL}/auth/login`, {
+      method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
     },
@@ -137,8 +151,8 @@ export async function apiRequest<T>(
     headers.set("Authorization", `Bearer ${accessToken}`);
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
+  const response = await fetchApi(`${API_BASE_URL}${endpoint}`, {
+        ...options,
     headers,
   });
 

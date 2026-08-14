@@ -8,6 +8,16 @@ import type { CurrentUser } from "@/types/auth";
 import type { Company } from "@/types/company";
 import type { User } from "@/types/user";
 
+type UserSearchField = "username" | "company";
+
+const userSearchPlaceholders: Record<
+  UserSearchField,
+  string
+> = {
+  username: "Kullanıcı adını girin...",
+  company: "Firma adını girin...",
+};
+
 function SearchIcon() {
   return (
     <svg
@@ -39,6 +49,8 @@ export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
 
+  const [searchField, setSearchField] =
+    useState<UserSearchField>("username");
   const [searchQuery, setSearchQuery] = useState("");
   const [editingUser, setEditingUser] =
     useState<User | null>(null);
@@ -217,23 +229,23 @@ export default function UsersPage() {
   }
 
   const normalizedQuery = searchQuery
-    .trim()
-    .toLocaleLowerCase("tr-TR");
+  .trim()
+  .toLocaleLowerCase("tr-TR");
 
   const filteredUsers = users.filter((user) => {
-    if (!normalizedQuery) {
-      return true;
-    }
+  if (!normalizedQuery) {
+    return true;
+  }
 
-    return (
-      user.UserName.toLocaleLowerCase("tr-TR").includes(
-        normalizedQuery,
-      ) ||
-      getCompanyName(user.CompanyId)
-        .toLocaleLowerCase("tr-TR")
-        .includes(normalizedQuery)
-    );
-  });
+  const searchableValue =
+    searchField === "username"
+      ? user.UserName
+      : getCompanyName(user.CompanyId);
+
+  return searchableValue
+    .toLocaleLowerCase("tr-TR")
+    .includes(normalizedQuery);
+});
 
   const activeUserCount = users.filter(
     (user) => user.IsActive,
@@ -349,22 +361,57 @@ export default function UsersPage() {
             Kullanıcı ara
           </label>
 
-          <div className="relative">
-            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-muted">
-              <SearchIcon />
-            </span>
+          <div className="grid gap-3 md:grid-cols-[220px_minmax(0,1fr)]">
+  <div>
+    <label
+      htmlFor="user-search-field"
+      className="mb-1.5 block text-sm font-medium text-foreground"
+    >
+      Arama ölçütü
+    </label>
 
-            <input
-              id="user-search"
-              type="search"
-              value={searchQuery}
-              onChange={(event) =>
-                setSearchQuery(event.target.value)
-              }
-              placeholder="Kullanıcı adı veya firma ile ara..."
-              className="w-full rounded-md border border-app-border bg-surface px-4 py-3 pl-11 text-sm text-foreground outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary-soft"
-            />
-          </div>
+    <select
+      id="user-search-field"
+      value={searchField}
+      onChange={(event) => {
+        setSearchField(
+          event.target.value as UserSearchField,
+        );
+        setSearchQuery("");
+      }}
+      className="w-full rounded-md border border-app-border bg-surface px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary-soft"
+    >
+      <option value="username">Kullanıcı adı</option>
+      <option value="company">Firma</option>
+    </select>
+  </div>
+
+  <div>
+    <label
+      htmlFor="user-search"
+      className="mb-1.5 block text-sm font-medium text-foreground"
+    >
+      Arama metni
+    </label>
+
+    <div className="relative">
+      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-muted">
+        <SearchIcon />
+      </span>
+
+      <input
+        id="user-search"
+        type="search"
+        value={searchQuery}
+        onChange={(event) =>
+          setSearchQuery(event.target.value)
+        }
+        placeholder={userSearchPlaceholders[searchField]}
+        className="w-full rounded-md border border-app-border bg-surface px-4 py-3 pl-11 text-sm text-foreground outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary-soft"
+      />
+    </div>
+  </div>
+</div>
         </div>
 
         {notice && (
