@@ -22,10 +22,25 @@ if os.getenv("SEED_DEMO_DATA", "false").lower() == "true":
 
 app = FastAPI(title="Fatura Yönetim Sistemi API")
 
-allowed_origins = [
+default_allowed_origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
 ]
+
+configured_allowed_origins = [
+    origin.strip()
+    for origin in os.getenv(
+        "CORS_ALLOWED_ORIGINS",
+        "",
+    ).split(",")
+    if origin.strip()
+]
+
+allowed_origins = list(
+    dict.fromkeys(
+        default_allowed_origins + configured_allowed_origins,
+    ),
+)
 
 app.add_middleware(
     CORSMiddleware,

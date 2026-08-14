@@ -267,8 +267,8 @@ export default function InvoicesPage() {
       </select>
     </div>
 
-    <div>
-      <label
+      <div className="min-w-0">
+        <label
         htmlFor="invoice-search"
         className="mb-1.5 block text-sm font-medium text-foreground"
       >
@@ -285,9 +285,8 @@ export default function InvoicesPage() {
           onChange={(event) =>
             setSearchQuery(event.target.value)
           }
-          className="w-full rounded-md border border-app-border bg-surface px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary-soft"
-        />
-      ) : (
+          className="block min-w-0 max-w-full rounded-md border border-app-border bg-surface px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary-soft"        />
+          ) : (
         <div className="relative">
           <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-muted">
             <SearchIcon />
