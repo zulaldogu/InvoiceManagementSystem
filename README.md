@@ -1,224 +1,306 @@
 # Invoice Management System
 
-This project is a full-stack web application developed to manage customer, product, invoice, and authorization processes for companies. The system is being developed as an internship project. The current phase focuses on building a modular backend API before moving to the frontend development phase.
+A full-stack, multi-company invoice management application developed as an internship project. It provides secure customer, product, invoice, company, user, role, and profile management through a Turkish administration interface.
 
-## System Architecture
+## Features
 
-The project is designed with three main layers:
+- JWT-based authentication
+- Argon2 password hashing
+- Company-based data isolation
+- Super administrator, company manager, and limited viewer accounts
+- Role and profile-based authorization
+- Company and user management
+- Customer and product/service CRUD operations
+- Invoice creation, editing, deletion, and detail views
+- Invoice line creation, updating, and removal
+- KDV and ÖTV calculations
+- Backend-controlled invoice totals
+- Real-data dashboard and recent invoices
+- Field-specific search and filtering
+- Responsive sidebar, tables, forms, and modals
+- Docker Compose setup with persistent SQLite storage
+- Repeatable and idempotent demo data
 
-- **Frontend:** Developed with Next.js, React, TypeScript, and Tailwind CSS.
-- **Backend:** Developed with FastAPI as a RESTful API.
-- **Database:** Designed with a relational database structure using SQLite and SQLAlchemy ORM.
+## Technology Stack
 
-## Technologies Used
+### Backend
 
-- Python
+- Python 3.13
 - FastAPI
 - SQLAlchemy
-- SQLite
 - Pydantic
+- SQLite
+- Alembic
+- PyJWT
+- pwdlib with Argon2
 - Uvicorn
-- Git and GitHub
-- Swagger UI
-- Next.js
-- React
+
+### Frontend
+
+- Next.js 16
+- React 19
 - TypeScript
-- Tailwind CSS
-- Docker and Docker Compose
+- Tailwind CSS 4
+- ESLint
 
-## Backend Structure
+### Infrastructure
 
-The backend is organized with a modular structure. Database models, schemas, authorization helpers, and routers are separated to keep the project maintainable.
-
-Main backend components:
-
-- `main.py`: Starts the FastAPI application and includes API routers.
-- `database.py`: Contains database connection, session, and base configuration.
-- `models.py`: Contains SQLAlchemy ORM models.
-- `schemas.py`: Contains Pydantic request and response schemas.
-- `auth.py`: Contains role-based authorization helper functions.
-- `routers/`: Contains separate API route files for each module.
-
-## Database Tables
-
-The database currently includes the following tables:
-
-- `Users`: Stores system users.
-- `Customer`: Stores customer account information.
-- `Product`: Stores products or services used in invoice lines.
-- `Invoice`: Stores invoice header information.
-- `InvoiceLine`: Stores invoice line/detail records.
-- `Role`: Stores authorization roles.
-- `Profile`: Stores user profiles.
-- `ProfileRole`: Connects profiles with roles.
-- `UserProfile`: Connects users with profiles.
+- Docker
+- Docker Compose
+- Git and GitHub
 
 ## Authorization Model
 
-The system uses a role/profile based authorization structure.
-
-Authorization flow:
+Authorization follows this relationship:
 
 ```text
 User -> UserProfile -> Profile -> ProfileRole -> Role
 ```
 
-A user can be assigned to a profile, and a profile can contain multiple roles. API operations are controlled according to the roles assigned to the user's profile.
+The authenticated user's company is obtained from the JWT session. Client-provided company identifiers are not trusted for tenant operations.
 
-Example roles:
+Main application permissions include:
 
-- `MANAGE_PRODUCTS`
-- `MANAGE_CUSTOMERS`
 - `VIEW_CUSTOMERS`
-- `MANAGE_INVOICES`
+- `MANAGE_CUSTOMERS`
+- `MANAGE_PRODUCTS`
 - `VIEW_INVOICES`
-
-Example profiles:
-
-- `ADMIN`
-- `ACCOUNTANT`
-
-The admin profile can manage products, customers, and invoices. The accountant profile can access invoice-related operations depending on the assigned roles.
-
-## API Modules
-
-The backend currently includes the following API modules:
-
-- Users
-- Customers
-- Products
-- Roles
-- Profiles
-- Profile Roles
-- User Profiles
-- Invoices
-- Invoice Lines
-
-## Invoice Workflow
-
-The invoice workflow supports invoice headers and invoice line records.
-
-Implemented invoice features:
-
-- Creating invoice records
-- Listing invoices
-- Viewing invoice details with related line items
-- Updating invoice records
-- Deleting invoice records
-- Creating invoice lines by selecting existing products
-- Automatically retrieving product name and product price for invoice lines
-- Automatically recalculating invoice total amount
-- Deleting related invoice lines when an invoice is deleted
-
-## Validation and Error Handling
-
-The backend API includes validation and controlled error responses for important scenarios:
-
-- Creating an invoice with a non-existing customer returns `404 Customer not found`.
-- Creating an invoice line with a non-existing product returns `404 Product not found`.
-- Performing an authorized operation with a non-existing user returns `404 User not found`.
-- Performing an operation without the required role returns `403 Forbidden`.
-- Requesting non-existing invoice or invoice line records returns `404`.
+- `MANAGE_INVOICES`
 
 ## Running with Docker
 
-Docker Desktop must be installed and running before starting the application.
+Docker Desktop must be installed and running.
 
-Clone the repository and enter the project directory:
+Clone the repository:
 
 ```powershell
 git clone https://github.com/zulaldogu/InvoiceManagementSystem.git
-cd InvoiceManagementSystem
+Set-Location InvoiceManagementSystem
 ```
 
-Create the local environment file from the provided example:
+Create the local environment file:
 
 ```powershell
 Copy-Item .env.example .env
 ```
 
-The `.env` file contains local JWT and demo login settings and is ignored by Git. The example values are intended only for local development and must be changed before a production deployment.
-
-Build and start the backend and frontend services:
+Build and start the services:
 
 ```powershell
 docker compose up --build -d
 ```
 
-Docker Compose automatically:
-
-- Applies all Alembic database migrations
-- Creates the demo company
-- Creates an Argon2-hashed administrator account
-- Creates repeatable product, customer, invoice, role, and profile data
-- Starts the FastAPI and Next.js services
-
-Open the following addresses:
-
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:8000
-- Swagger UI: http://localhost:8000/docs
-
-Demo login credentials:
-
-- Username: `admin`
-- Password: `DemoAdmin123!`
-
-Use the **Authorize** button in Swagger to obtain and use a JWT access token.
-
-The SQLite database is stored in the named Docker volume `invoice-management-data`. Restarting the containers does not duplicate the demo records.
-
-Check the services:
+Check container status:
 
 ```powershell
 docker compose ps
 ```
 
-View backend logs:
+Open:
 
-```powershell
-docker compose logs backend
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8000
+- Swagger UI: http://localhost:8000/docs
+
+Docker startup automatically:
+
+- Applies Alembic migrations
+- Creates secure demo accounts
+- Creates repeatable company-specific demo records
+- Starts the FastAPI and Next.js services
+
+## Demo Accounts
+
+| Account | Username | Password | Access |
+|---|---|---|---|
+| Super Administrator | `admin` | `DemoAdmin123!` | System-wide administration |
+| Company Manager | `companymanager` | `CompanyManager123!` | Company operational management |
+| Limited Viewer | `companyviewer` | `CompanyViewer123!` | Restricted company viewing |
+
+The login screen also displays these local demo credentials for evaluation.
+
+Demo passwords and the example JWT secret are intended only for local development. They must be replaced before production use.
+
+## Demo Records
+
+A clean Docker installation creates consistent, company-isolated sample records.
+
+The administrator company receives:
+
+- 6 customers
+- 8 products/services
+- 7 invoices
+
+The company demo account receives:
+
+- 5 customers
+- 6 products/services
+- 5 invoices
+
+Running the seed process again does not duplicate these records.
+
+## Database Persistence
+
+SQLite data is stored in the named Docker volume:
+
+```text
+invoice-management-data
 ```
 
-Stop the application without deleting its data:
+Stop the application without deleting data:
 
 ```powershell
 docker compose down
 ```
 
-## Running the Backend
-
-Create `.env` from the example file if it does not already exist:
+Restart:
 
 ```powershell
-Copy-Item .env.example .env
+docker compose up -d
 ```
 
-Go to the backend directory:
+Delete the containers and database volume only when a complete data reset is intended:
 
 ```powershell
-cd backend
+docker compose down -v
 ```
 
-Install the dependencies and apply the migrations:
+Then create a clean installation:
 
 ```powershell
-.\venv\Scripts\python.exe -m pip install -r requirements.txt
-.\venv\Scripts\python.exe -m alembic upgrade head
+docker compose up --build -d
 ```
 
-Start FastAPI by loading the environment variables:
+> Warning: `docker compose down -v` permanently removes the Docker database volume.
+
+## Environment Configuration
+
+The `.env.example` file documents the required local settings:
+
+- JWT secret and expiration time
+- Demo account credentials
+- Frontend API address
+- Allowed CORS origins
+
+The real `.env` file is ignored by Git.
+
+For access from another device on the same local network, update the API URL and CORS origins with the host computer's local IPv4 address, then rebuild the services.
+
+## Database Migrations
+
+Docker applies migrations automatically. For manual verification:
 
 ```powershell
-.\venv\Scripts\python.exe -m uvicorn main:app --reload --env-file ..\.env
+docker compose exec backend python -m alembic current
+docker compose exec backend python -m alembic heads
+docker compose exec backend python -m alembic check
 ```
 
-Swagger UI is available at:
+The current migration chain includes:
 
-```text
-http://127.0.0.1:8000/docs
+- Initial database schema
+- Company tenancy foundation
+- Invoice KDV and ÖTV fields
+
+## Verification Commands
+
+Frontend lint:
+
+```powershell
+npm.cmd --prefix frontend run lint
 ```
 
-## Current Development Status
+Frontend production build:
 
-The backend API and the first frontend development phase have been completed. The application currently provides Turkish dashboard, product, customer, invoice list, and invoice detail pages connected to the FastAPI backend. Backend and frontend services can be built and started together with Docker Compose. A persistent SQLite volume and repeatable demo data are included for testing.
+```powershell
+npm.cmd --prefix frontend run build
+```
+
+Backend Python syntax check:
+
+```powershell
+Get-ChildItem backend -Filter *.py -Recurse |
+  Where-Object {
+    $_.FullName -notmatch '\\venv\\|\\__pycache__\\'
+  } |
+  ForEach-Object {
+    python -m py_compile $_.FullName
+  }
+```
+
+Docker logs:
+
+```powershell
+docker compose logs --tail=100 backend
+docker compose logs --tail=100 frontend
+```
+
+Git whitespace check:
+
+```powershell
+git diff --check
+```
+
+## Main Application Pages
+
+- `/login` — Authentication
+- `/` — Dashboard
+- `/customers` — Customer management
+- `/customers/[customerId]` — Customer detail
+- `/products` — Product and service management
+- `/products/[productId]` — Product detail
+- `/invoices` — Invoice management
+- `/invoices/new` — Invoice creation
+- `/invoices/[invoiceId]` — Invoice detail
+- `/invoices/[invoiceId]/edit` — Invoice and line editing
+- `/companies` — Company management or current company information
+- `/users` — User management
+- `/authorization` — Role and profile management
+
+Available pages, menu items, and operations change according to the authenticated user's permissions.
+
+## Validation and Security
+
+The application includes controls for:
+
+- Missing or invalid JWT tokens
+- Inactive users and companies
+- Missing permissions
+- Cross-company record access
+- Duplicate product codes, tax numbers, and invoice numbers
+- Deleting referenced customers or products
+- Invalid invoice lines and tax rates
+- Profile and role assignment integrity
+- Protected frontend routes and permission-based actions
+
+Common API responses include `401`, `403`, `404`, and `409`.
+
+## Testing Status
+
+The following checks were completed successfully:
+
+- Authentication and logout flows
+- Super administrator, company manager, and limited viewer scenarios
+- Company isolation
+- Customer and product CRUD
+- Invoice and invoice-line workflows
+- KDV and ÖTV calculations
+- Dashboard updates
+- Role and profile assignment protection
+- Direct URL and menu visibility controls
+- Desktop, tablet, and mobile layouts
+- Keyboard and Escape-key interactions
+- Clean Docker installation and persistent volume behavior
+- Frontend lint and production build
+- Backend syntax and Alembic checks
+
+## Known Development Notes
+
+- Automated pytest, frontend component tests, and CI workflows are not included; final validation was performed through syntax, build, API, Docker, and manual end-to-end tests.
+- The JWT access token is stored in `sessionStorage`, which is acceptable for this local internship demonstration. Production deployment should evaluate HttpOnly cookies and refresh-token handling.
+- Demo credentials shown on the login page must be removed in production.
+- Dependency audit warnings should be reviewed before a production deployment. Avoid forced dependency upgrades without regression testing.
+
+## Project Status
+
+The planned internship scope has been completed. The application is ready for local Docker-based evaluation and final supervisor review.
