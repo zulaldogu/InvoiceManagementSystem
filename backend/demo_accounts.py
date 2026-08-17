@@ -3,6 +3,7 @@ import os
 from sqlalchemy.orm import Session
 
 import models
+from demo_records import seed_company_demo_records
 from security import hash_password, verify_password
 
 
@@ -150,7 +151,6 @@ def ensure_profile_roles(
                 )
             )
 
-
 def seed_company_demo_accounts(
     db: Session,
     creator_user_id: int,
@@ -273,4 +273,9 @@ def seed_company_demo_accounts(
         ],
         company.CompanyId,
         creator_user_id,
+    )
+    seed_company_demo_records(
+        db,
+        company,
+        manager_user,
     )
