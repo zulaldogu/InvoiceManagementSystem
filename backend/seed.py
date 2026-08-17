@@ -1,8 +1,8 @@
 import os
-from decimal import Decimal
 
 import models
 from database import SessionLocal
+from demo_records import seed_admin_demo_records
 from demo_accounts import seed_company_demo_accounts
 from security import hash_password, verify_password
 
@@ -148,95 +148,10 @@ def seed_demo_data():
             user.UserId,
         )
 
-        product = db.query(models.Product).filter(
-            models.Product.ProductCode == "DEMO-001",
-            models.Product.CompanyId == company.CompanyId,
-        ).first()
-
-        if product is None:
-            product = models.Product(
-                ProductCode="DEMO-001",
-                ProductName="Danışmanlık Hizmeti",
-                UnitPrice=Decimal("500.00"),
-                VatRate=Decimal("20.00"),
-                CompanyId=company.CompanyId,
-                UserId=user.UserId,
-            )
-            db.add(product)
-            db.flush()
-        else:
-            product.UserId = user.UserId
-
-        customer = db.query(models.Customer).filter(
-            models.Customer.TaxNumber == "1234567890",
-            models.Customer.CompanyId == company.CompanyId,
-        ).first()
-
-        if customer is None:
-            customer = models.Customer(
-                TaxNumber="1234567890",
-                Title="Demo Teknoloji Ltd. Şti.",
-                Address="Mersin Teknopark",
-                EMail="demo@example.com",
-                CompanyId=company.CompanyId,
-                UserId=user.UserId,
-            )
-            db.add(customer)
-            db.flush()
-        else:
-            customer.UserId = user.UserId
-
-        invoice = db.query(models.Invoice).filter(
-            models.Invoice.InvoiceNumber == "DEMO-INV-001",
-            models.Invoice.CompanyId == company.CompanyId,
-        ).first()
-
-        if invoice is None:
-            invoice = models.Invoice(
-                CustomerId=customer.CustomerId,
-                InvoiceNumber="DEMO-INV-001",
-                TotalAmount=Decimal("0.00"),
-                CompanyId=company.CompanyId,
-                UserId=user.UserId,
-            )
-            db.add(invoice)
-            db.flush()
-        else:
-            invoice.CustomerId = customer.CustomerId
-            invoice.UserId = user.UserId
-
-        invoice_line = db.query(models.InvoiceLine).filter(
-            models.InvoiceLine.InvoiceId == invoice.InvoiceId,
-            models.InvoiceLine.ProductId == product.ProductId,
-            models.InvoiceLine.CompanyId == company.CompanyId,
-        ).first()
-
-        if invoice_line is None:
-            invoice_line = models.InvoiceLine(
-                InvoiceId=invoice.InvoiceId,
-                ProductId=product.ProductId,
-                ItemName=product.ProductName,
-                Quantity=2,
-                Price=product.UnitPrice,
-                CompanyId=company.CompanyId,
-                UserId=user.UserId,
-            )
-            db.add(invoice_line)
-            db.flush()
-        else:
-            invoice_line.UserId = user.UserId
-
-        invoice_lines = db.query(models.InvoiceLine).filter(
-            models.InvoiceLine.InvoiceId == invoice.InvoiceId,
-            models.InvoiceLine.CompanyId == company.CompanyId,
-        ).all()
-
-        invoice.TotalAmount = sum(
-            (
-                Decimal(line.Quantity) * Decimal(line.Price)
-                for line in invoice_lines
-            ),
-            Decimal("0.00"),
+        seed_admin_demo_records(
+            db,
+            company,
+            user,
         )
 
         db.commit()
